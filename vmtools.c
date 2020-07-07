@@ -100,7 +100,7 @@ static int get_sorted_memslots(struct kvm_memslots *slots, int max_slots, vm_mem
 	int slot_count, i;
 
 	slot_count = 0;
-	for (i = 0; i < KVM_MEM_SLOTS_NUM && i < max_slots; i++) {
+	for (i = 0; i < KVM_MEM_SLOTS_NUM && slot_count < max_slots; i++) {
 		slot = slots->memslots + i;
 		if (slot->npages) {
 			if (slot_count > slots->used_slots) {
