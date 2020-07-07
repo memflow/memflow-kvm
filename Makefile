@@ -1,5 +1,5 @@
 obj-m += memflow.o
-memflow-objs := main.o
+memflow-objs := main.o vmtools.o
 MCFLAGS += -O3
 ccflags-y += ${MCFLAGS}
 CC += ${MCFLAGS}

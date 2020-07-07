@@ -8,39 +8,38 @@
  * Provides all structures and ioctls for interacting with memflow's kernel module
 */
 
-/* On x86_64 it is a 512 limit, some other arches have less */
-#define MAX_MEM_SLOTS 512
-
 #include <linux/types.h>
 #include <linux/ioctl.h>
 
 /// @brief structure describing a guest to host memory mapping
-struct vm_memslot {
+typedef struct vm_memslot {
 	/// Base physical address in the guest
 	__aligned_u64 base;
 	/// Host virtual address where the guest base resides in
 	__aligned_u64 host_base;
 	/// Size of the mapping
 	__aligned_u64 map_size;
-};
+} vm_memslot_t;
 
 /// @brief structure describing the virtual machine
 typedef struct vm_info {
 	/// PID of userspace VM monitor.
 	__kernel_pid_t userspace_pid;
-	/// Number of memory slots in the VM
+	/// Number of memory slots allocated by userspace. After MEMFLOW_VM_INFO ioctl -
+	/// number of slots in the VM
 	__u32 slot_count;
 	/// The memory slots, sorted by base address
-	struct vm_memslot slots[MAX_MEM_SLOTS];
+	struct vm_memslot slots[];
 } vm_info_t;
 
 /// @brief structure describing memory layout of the mapped virtual machine
 typedef struct vm_map_info {
-	/// Number of memory slots that were mapped in the VM
+	/// Number of memory slots that were allocated. After MEMFLOW_VM_MAP_INFO ioctl -
+	/// number of slots that were mapped in the VM
 	__u32 slot_count;
 	/// The mapped memory slots, sorted by base address. Slots only include the regions that were mapped in,
 	/// so the first, and the last slots may not be the full KVM memslots, if not everything is mapped in
-	struct vm_memslot slots[MAX_MEM_SLOTS];
+	struct vm_memslot slots[];
 } vm_map_info_t;
 
 #define MEMFLOW_IOCTL_MAGIC 0x6d
