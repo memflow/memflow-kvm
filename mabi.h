@@ -34,7 +34,7 @@ typedef struct vm_info {
 
 /// @brief structure describing memory layout of the mapped virtual machine
 typedef struct vm_map_info {
-	/// Number of memory slots that were allocated. After MEMFLOW_VM_MAP_INFO ioctl -
+	/// Number of memory slots that were allocated. After MEMFLOW_MAP_VM ioctl -
 	/// number of slots that were mapped in the VM
 	__u32 slot_count;
 	/// The mapped memory slots, sorted by base address. Slots only include the regions that were mapped in,
@@ -63,10 +63,11 @@ typedef struct vm_map_info {
 #define MEMFLOW_VM_INFO _IOWR(MEMFLOW_IOCTL_MAGIC, 1, vm_info_t)
 
 /**
- * @brief Describe the memory layout of the mapped VM memory
+ * @brief Map the VM and retrieve its memory layout
  *
- * Fills `vm_map_info_t` structure that describes the memory layout.
+ * Fills `vm_map_info_t` structure that describes the memory layout of the mapped VM. Returns a file descriptor
+ * to the memory mapping handle. The VM memory stays mapped in, until the fd gets closed.
 */
-#define MEMFLOW_VM_MAP_INFO _IOWR(MEMFLOW_IOCTL_MAGIC, 2, vm_map_info_t)
+#define MEMFLOW_MAP_VM _IOWR(MEMFLOW_IOCTL_MAGIC, 2, vm_map_info_t)
 
 #endif
