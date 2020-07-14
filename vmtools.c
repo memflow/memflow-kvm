@@ -1,6 +1,6 @@
 #include "vmtools.h"
 #include "main.h"
-#include "ksyms.h"
+#include "kallsyms/ksyms.h"
 #include "mabi.h"
 #include <linux/kvm_host.h>
 #include <linux/anon_inodes.h>
@@ -104,10 +104,10 @@ static int get_sorted_memslots(struct kvm_memslots *slots, int max_slots, vm_mem
 	int slot_count, i;
 
 	slot_count = 0;
-	for (i = 0; i < KVM_MEM_SLOTS_NUM && slot_count < max_slots; i++) {
+	for (i = 0; i < KVM_MEM_SLOTS_NUM && slot_count < max_slots && slot_count < slots->used_slots; i++) {
 		slot = slots->memslots + i;
-		if (slot->npages) {
-			if (slot_count > slots->used_slots) {
+		if (slot->npages && slot->npages != -1) {
+			if (slot_count >= slots->used_slots) {
 				mprintk("Critical error: memory slot overflow\n");
 				return -1;
 			}
@@ -177,6 +177,148 @@ do_return:
 	return ret;
 }
 
+struct vm_mem_data {
+	// This field is only valid pre-mmap call.
+	struct vm_area_struct *wrapped_vma;
+	struct task_struct *wrapped_task;
+	int nr_pages;
+	struct page **pages;
+};
+
+static int memflow_vm_mem_release(struct inode *inode, struct file *file)
+{
+	struct vm_mem_data *data = file->private_data;
+	int i;
+
+	if (data) {
+		if (data->pages) {
+			for (i = 0; i < data->nr_pages; i++)
+				put_page(data->pages[i]);
+			vfree(data->pages);
+		}
+
+		vfree(data);
+	}
+
+	return 0;
+}
+
+static int memflow_vm_mem_mmap(struct file *file, struct vm_area_struct *vma)
+{
+	struct vm_mem_data *data = file->private_data;
+	unsigned long nr_pages = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+	int i, ret = -1;
+	unsigned long foll_flags = FOLL_LONGTERM|FOLL_GET;
+	pgprot_t remap_flags = PAGE_SHARED;
+	struct vm_area_struct **tmp_vmas;
+
+	if (vma->vm_flags & VM_WRITE)
+		foll_flags |= FOLL_WRITE;
+	else
+		remap_flags = PAGE_READONLY;
+
+	if (data->wrapped_vma->vm_end - data->wrapped_vma->vm_start != nr_pages << PAGE_SHIFT)
+		goto do_return;
+
+	data->pages = vmalloc(sizeof(*data->pages) * nr_pages);
+
+	if (!data->pages)
+		goto do_return;
+
+	tmp_vmas = vmalloc(sizeof(*tmp_vmas) * nr_pages);
+
+	if (!tmp_vmas)
+		goto free_pages;
+
+	data->nr_pages = get_user_pages_remote(data->wrapped_task, data->wrapped_task->mm, data->wrapped_vma->vm_start, nr_pages, foll_flags, data->pages, tmp_vmas, NULL);
+
+	// We really don't need them, but we vmalloc it, because the kernel kcallocs it, and it fails?
+	vfree(tmp_vmas);
+
+	if (data->nr_pages != nr_pages)
+		goto put_pages;
+
+	vma->vm_flags |= VM_PFNMAP | VM_DONTDUMP;
+
+	ret = 0;
+
+	// We would normally use vm_insert_pages, but the given pages may be compound
+	for (i = 0; i < data->nr_pages; i++) {
+		ret = remap_pfn_range(vma, vma->vm_start + i * (1ul << PAGE_SHIFT), page_to_pfn(data->pages[i]), 1ul << PAGE_SHIFT, remap_flags);
+		if (ret) {
+			//Unmap all mapped pages
+			break;
+		}
+	}
+
+	if (ret || data->nr_pages != nr_pages)
+		goto put_pages;
+
+	data->wrapped_vma = NULL;
+	data->wrapped_task = NULL;
+
+	return 0;
+
+put_pages:
+	for (i = 0; i < data->nr_pages; i++)
+		put_page(data->pages[i]);
+free_pages:
+	vfree(data->pages);
+	data->nr_pages = 0;
+	data->pages = NULL;
+do_return:
+	return ret;
+}
+
+static unsigned long memflow_vm_mem_get_unmapped_area(struct file *file, unsigned long addr, unsigned long len, unsigned long pgoff, unsigned long flags)
+{
+	struct vm_mem_data *data = file->private_data;
+	return get_unmapped_area(data->wrapped_vma->vm_file, addr, len, pgoff + data->wrapped_vma->vm_pgoff, flags);
+}
+
+static const struct file_operations memflow_vm_mem_fops = {
+	.release = memflow_vm_mem_release,
+	.mmap = memflow_vm_mem_mmap,
+	.get_unmapped_area = memflow_vm_mem_get_unmapped_area,
+	.owner = THIS_MODULE
+};
+
+static unsigned long mmap_vma(struct vm_area_struct *vma, struct task_struct *task)
+{
+	struct file *wrap_file;
+	unsigned long page_prot = PROT_READ;
+	struct vm_mem_data *priv;
+	unsigned long ret = -1;
+
+	priv = vmalloc(sizeof(*priv));
+
+	if (!priv)
+		goto do_return;
+
+	priv->pages = NULL;
+	priv->wrapped_vma = vma;
+	priv->wrapped_task = task;
+
+	wrap_file = anon_inode_getfile("memflow-vm-mem", &memflow_vm_mem_fops, priv, O_RDWR);
+
+	if (IS_ERR_OR_NULL(wrap_file))
+		goto free_priv;
+
+	if (vma->vm_flags & VM_WRITE)
+		page_prot |= PROT_WRITE;
+
+	ret = vm_mmap(wrap_file, 0, vma->vm_end - vma->vm_start, page_prot, MAP_SHARED, 0);
+
+	fput(wrap_file);
+
+	return ret;
+
+free_priv:
+	vfree(priv);
+do_return:
+	return ret;
+}
+
 // Called with otask->mm->mm_sem locked for writing. Does not release the lock
 static void remap_vmas(struct vm_mapped_data *data, struct task_struct *otask)
 {
@@ -186,43 +328,22 @@ static void remap_vmas(struct vm_mapped_data *data, struct task_struct *otask)
 	struct vm_area_struct *vma;
 	unsigned long retaddr;
 	unsigned long offset;
-	int map_flags;
 
 	for (i = 0; i < data->mapped_vma_count; i++) {
+
 		mapped_vma = data->vma_maps + i;
 
 		vma = find_vma(otask->mm, mapped_vma->start);
 
-		// Anonymous VMAs backed by nothing are not mappable
-		if (!vma || !vma->vm_ops || !vma->vm_file || (void *)vma->vm_file == (void *)vma->vm_ops) {
-			if (!vma) {
-				mprintk("critical bug - no vma\n");
-				goto remove_vma_map_entry;
-			}
+		if (!vma)
+			goto remove_vma_map_entry;
 
-			mprintk("%d (%p %lx %lx) not mappable!\n", i, vma, vma->vm_start, vma->vm_end);
+		retaddr = mmap_vma(vma, otask);
 
+		if (IS_ERR((void *)retaddr))
 			goto remove_unmapped_slots;
-		}
-
-		mprintk("%d (%p %lx %lx %p %p %lx) %lx\n", i, vma, vma->vm_start, vma->vm_end, vma->vm_file, vma->vm_ops, vma->vm_flags, atomic_long_read(&vma->vm_file->f_count));
-
-		vma->vm_flags |= VM_SHARED | VM_MAYSHARE;
-		map_flags = MAP_SHARED;
-
-		if (vma->vm_flags & VM_HUGETLB)
-			map_flags |= MAP_HUGETLB;
-
-		// In reality, this will try to allocate CoW memory. We need to somehow not do that
-		retaddr = vm_mmap(vma->vm_file, 0, vma->vm_end - vma->vm_start, PROT_READ, map_flags, vma->vm_pgoff >> PAGE_SHIFT);
-
-		if (retaddr > ~0ul - 0x100) {
-			mprintk("ERR %ld\n", -retaddr);
-			goto remove_unmapped_slots;
-		}
 
 		// Update the internal structure to point to the current userspace
-
 		offset = retaddr - mapped_vma->start;
 
 		for (o = 0; o < data->vm_map_info.slot_count; o++) {
@@ -250,22 +371,9 @@ remove_unmapped_slots:
 		}
 
 remove_vma_map_entry:
-		//Do swap remove
+		// Do swap remove
 		data->vma_maps[i--] = data->vma_maps[--data->mapped_vma_count];
 	}
-
-	/*mprintk("Retained vmas:\n");
-
-	for (i = 0; i < data->mapped_vma_count; i++) {
-		mprintk("%d %lx-%lx\n", i, data->vma_maps[i].start, data->vma_maps[i].end);
-	}
-
-	mprintk("Retained memslots:\n");
-
-	for (i = 0; i < data->vm_map_info.slot_count; i++) {
-		slot = data->vm_map_info.slots + i;
-		mprintk("%d %llx %llx %llx\n", i, slot->base, slot->host_base, slot->map_size);
-	}*/
 }
 
 static void find_unique_vmas(struct vm_mapped_data *data, struct mm_struct *other_mm)
@@ -350,7 +458,7 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 
 	file = anon_inode_getfile("memflow-vm-map", &memflow_vm_mapped_fops, priv, O_RDWR);
 
-	if (IS_ERR(file))
+	if (IS_ERR_OR_NULL(file))
 		goto unlock_mem;
 
 	// Now remap all unique mappings

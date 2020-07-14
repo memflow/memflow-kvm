@@ -2,15 +2,17 @@
 #include <linux/types.h>
 #include <linux/version.h>
 #include <linux/module.h>
-#include <linux/kallsyms.h>
 #include <linux/miscdevice.h>
 #include "mabi.h"
 #include "main.h"
-#include "ksyms.h"
+#include "kallsyms/kallsyms.h"
+#include "kallsyms/kallsyms.c"
+#include "kallsyms/ksyms.h"
 
 MODULE_DESCRIPTION("memflow kernel module used to support KVM backend");
 MODULE_AUTHOR("Heep");
 MODULE_LICENSE("GPL");
+MODULE_INFO(livepatch, "Y");
 
 static int memflow_init(void);
 static void memflow_exit(void);
@@ -31,9 +33,7 @@ static struct miscdevice memflow_dev = {
 	&memflow_chardev_ops
 };
 
-KSYMDEF(insert_vm_struct);
-KSYMDEF(vm_area_alloc);
-KSYMDEF(vm_area_free);
+
 KSYMDEF(kvm_lock);
 KSYMDEF(vm_list);
 
@@ -41,9 +41,9 @@ static int memflow_init(void)
 {
 	int r;
 
-	KSYMINIT_FAULT(insert_vm_struct);
-	KSYMINIT_FAULT(vm_area_alloc);
-	KSYMINIT_FAULT(vm_area_free);
+	if ((r = init_kallsyms()))
+		return r;
+
 	KSYMINIT_FAULT(kvm_lock);
 	KSYMINIT_FAULT(vm_list);
 
