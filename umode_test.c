@@ -70,7 +70,7 @@ int main()
 		for (int i = 0; i < vm_info->slot_count; i++) {
 			vm_memslot_t *slot = vm_info->slots + i;
 			printf("%d %llx->%llx (%llx)\n", i, slot->base, slot->host_base, slot->map_size);
-			//memset(slot->host_base, 255, slot->map_size);
+			memset((void *)slot->host_base, 0, slot->map_size);
 		}
 
 		close(vm_map_fd);
