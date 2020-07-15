@@ -29,7 +29,7 @@ typedef struct vm_info {
 	/// number of slots in the VM
 	__u32 slot_count;
 	/// The memory slots, sorted by base address
-	struct vm_memslot slots[];
+	struct vm_memslot *slots;
 } vm_info_t;
 
 /// @brief structure describing memory layout of the mapped virtual machine
@@ -39,7 +39,7 @@ typedef struct vm_map_info {
 	__u32 slot_count;
 	/// The mapped memory slots, sorted by base address. Slots only include the regions that were mapped in,
 	/// so the first, and the last slots may not be the full KVM memslots, if not everything is mapped in
-	struct vm_memslot slots[];
+	struct vm_memslot *slots;
 } vm_map_info_t;
 
 #define MEMFLOW_IOCTL_MAGIC 0x6d

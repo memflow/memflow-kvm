@@ -26,9 +26,8 @@ struct vm_vma_map {
 struct vm_mapped_data {
 	u32 mapped_vma_count;
 	struct vm_vma_map vma_maps[KVM_MEM_SLOTS_NUM];
-	//vm_map_info_t has flexible array at the end, _map_slots is the array.
 	vm_map_info_t vm_map_info;
-	struct vm_memslot _map_slots[KVM_MEM_SLOTS_NUM];
+	struct vm_memslot map_slots[KVM_MEM_SLOTS_NUM];
 };
 
 static const struct file_operations memflow_vm_mapped_fops = {
@@ -131,6 +130,7 @@ static int get_vm_info(struct kvm *kvm, vm_info_t __user *user_info)
 {
 	vm_info_t kernel_info;
 	vm_memslot_t *memslot_map;
+    vm_memslot_t __user *user_slots;
 	int ret;
 	u32 slot_count;
 
@@ -138,6 +138,8 @@ static int get_vm_info(struct kvm *kvm, vm_info_t __user *user_info)
 
 	if (copy_from_user(&kernel_info, user_info, sizeof(vm_info_t)))
 		goto do_return;
+
+    user_slots = kernel_info.slots;
 
 	mutex_lock(&kvm->lock);
 	mutex_lock(&kvm->slots_lock);
@@ -163,7 +165,7 @@ static int get_vm_info(struct kvm *kvm, vm_info_t __user *user_info)
 
 	if (copy_to_user(user_info, &kernel_info, sizeof(vm_info_t)))
 		goto free_slots;
-	if (copy_to_user(&user_info->slots, memslot_map, sizeof(*memslot_map) * slot_count))
+	if (slot_count && copy_to_user(user_slots, memslot_map, sizeof(*memslot_map) * slot_count))
 		goto free_slots;
 
 	ret = 0;
@@ -408,6 +410,7 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 	struct file *file;
 	struct task_struct *other_task;
 	struct mm_struct *other_mm;
+    vm_memslot_t __user *user_slots;
 
 	other_task = pid_task(find_vpid(kvm->userspace_pid), PIDTYPE_PID);
 
@@ -428,9 +431,11 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 	priv->mapped_vma_count = 0;
 	priv->vm_map_info.slot_count = 0;
 
-	//Do a copy to user now as well. If it fails to write here, ptr is RO, and we will avoid unmapping data 
 	if (copy_from_user(&priv->vm_map_info, user_info, sizeof(vm_map_info_t)))
 		goto free_alloc;
+    
+    user_slots = priv->vm_map_info.slots;
+    priv->vm_map_info.slots = priv->map_slots;
 
 	if (!priv->vm_map_info.slot_count)
 		goto free_alloc;
@@ -467,7 +472,9 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 	if (!priv->mapped_vma_count)
 		goto release_file;
 
-	if (copy_to_user(user_info, &priv->vm_map_info, sizeof(vm_map_info_t) + sizeof(vm_memslot_t) * priv->vm_map_info.slot_count))
+	if (copy_to_user(user_info, &priv->vm_map_info, sizeof(vm_map_info_t)))
+		goto release_file;
+	if (priv->vm_map_info.slot_count && copy_to_user(user_slots, &priv->vm_map_info, sizeof(*user_slots) * priv->vm_map_info.slot_count))
 		goto release_file;
 
 	fd_install(fd, file);

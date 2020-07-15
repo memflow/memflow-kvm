@@ -34,6 +34,7 @@ int main()
 
 	{
 		vm_info_t *vm_info = alloca(sizeof(vm_info_t) + sizeof(vm_memslot_t) * MAX_MEMSLOTS);
+        vm_info->slots = vm_info + 1;
 		vm_info->slot_count = MAX_MEMSLOTS;
 
 		if (ioctl(vm_fd, MEMFLOW_VM_INFO, vm_info)) {
@@ -52,6 +53,7 @@ int main()
 
 	{
 		vm_map_info_t *vm_info = alloca(sizeof(vm_map_info_t) + sizeof(vm_memslot_t) * MAX_MEMSLOTS);
+        vm_info->slots = vm_info + 1;
 		vm_info->slot_count = MAX_MEMSLOTS;
 
 		int vm_map_fd = ioctl(vm_fd, MEMFLOW_MAP_VM, vm_info);
