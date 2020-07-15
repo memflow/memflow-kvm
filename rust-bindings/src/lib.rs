@@ -1,13 +1,16 @@
-
 #![allow(non_upper_case_globals)]
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 
-use std::os::unix::io::{RawFd, FromRawFd, AsRawFd};
 use std::fs::File;
-use libc::ioctl;
+use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
+
+// Do not depend on entire libc just for this function
+extern "C" {
+    fn ioctl(fd: i32, request: __u64, ...) -> i32;
+}
 
 use std::io::Result;
 
@@ -15,13 +18,13 @@ use std::io::Result;
 ///
 /// This is a handle to `/dev/memflow`. It functions as a file, closes automatically when dropped
 pub struct ModuleHandle {
-    memflow: File
+    memflow: File,
 }
 
 impl ModuleHandle {
     pub fn try_open() -> Result<Self> {
         Ok(Self {
-            memflow: File::open("/dev/memflow")?
+            memflow: File::open("/dev/memflow")?,
         })
     }
 }
@@ -36,11 +39,10 @@ impl AsRawFd for ModuleHandle {
 ///
 /// This is a handle to a single KVM instance. Allows access to basic memory layout information of the VM.
 pub struct VMHandle {
-    vm: File
+    vm: File,
 }
 
 impl VMHandle {
-
     /// Open a KVM instance with a memflow handle
     ///
     /// This may be useful when multiple VMs are accessed to save syscalls, but in regular scenarios,
@@ -52,13 +54,13 @@ impl VMHandle {
     /// * `pid` - optional process identifier. If it is `None`, or `Some(0)`, handle to any of the KVM
     /// VMs gets retrieved.
     pub fn try_open_handle(memflow: &ModuleHandle, pid: Option<i32>) -> Result<Self> {
-        let vm_fd: RawFd = unsafe { libc::ioctl(memflow.as_raw_fd(), IO_MEMFLOW_OPEN_VM as u64, pid) };
+        let vm_fd: RawFd = unsafe { ioctl(memflow.as_raw_fd(), IO_MEMFLOW_OPEN_VM as u64, pid) };
 
         if vm_fd < 0 {
-            Err(std::io::Error::last_os_error()) 
+            Err(std::io::Error::last_os_error())
         } else {
             Ok(Self {
-                vm: unsafe { File::from_raw_fd(vm_fd) }
+                vm: unsafe { File::from_raw_fd(vm_fd) },
             })
         }
     }
@@ -84,10 +86,10 @@ impl VMHandle {
         vm_info.slot_count = slot_count as u32;
         vm_info.slots = memslots.as_mut_ptr();
 
-        let ret = unsafe { libc::ioctl(self.vm.as_raw_fd(), IO_MEMFLOW_MAP_VM as u64, &mut vm_info) };
+        let ret = unsafe { ioctl(self.vm.as_raw_fd(), IO_MEMFLOW_MAP_VM as u64, &mut vm_info) };
 
         if ret < 0 {
-            Err(std::io::Error::last_os_error()) 
+            Err(std::io::Error::last_os_error())
         } else {
             memslots.truncate(vm_info.slot_count as usize);
             Ok((vm_info.userspace_pid as i32, memslots))
@@ -107,10 +109,10 @@ impl VMHandle {
         vm_info.slot_count = slot_count as u32;
         vm_info.slots = memslots.as_mut_ptr();
 
-        let ret = unsafe { libc::ioctl(self.vm.as_raw_fd(), IO_MEMFLOW_MAP_VM as u64, &mut vm_info) };
+        let ret = unsafe { ioctl(self.vm.as_raw_fd(), IO_MEMFLOW_MAP_VM as u64, &mut vm_info) };
 
         if ret < 0 {
-            Err(std::io::Error::last_os_error()) 
+            Err(std::io::Error::last_os_error())
         } else {
             memslots.truncate(vm_info.slot_count as usize);
             Ok(memslots)
