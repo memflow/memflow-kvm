@@ -7,6 +7,7 @@
 #include <linux/sort.h>
 #include <linux/mm.h>
 #include <linux/mman.h>
+#include <linux/version.h>
 
 static int memflow_vm_release(struct inode *inode, struct file *filp);
 static long memflow_vm_ioctl(struct file *filp, unsigned int cmd, unsigned long argp);
@@ -130,7 +131,7 @@ static int get_vm_info(struct kvm *kvm, vm_info_t __user *user_info)
 {
 	vm_info_t kernel_info;
 	vm_memslot_t *memslot_map;
-    vm_memslot_t __user *user_slots;
+	vm_memslot_t __user *user_slots;
 	int ret;
 	u32 slot_count;
 
@@ -139,7 +140,7 @@ static int get_vm_info(struct kvm *kvm, vm_info_t __user *user_info)
 	if (copy_from_user(&kernel_info, user_info, sizeof(vm_info_t)))
 		goto do_return;
 
-    user_slots = kernel_info.slots;
+	user_slots = kernel_info.slots;
 
 	mutex_lock(&kvm->lock);
 	mutex_lock(&kvm->slots_lock);
@@ -187,6 +188,14 @@ struct vm_mem_data {
 	struct page **pages;
 };
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,7,0)
+#define PAGE_GET_FLAG FOLL_LONGTERM
+#define RELEASE_PAGE put_page
+#else
+#define PAGE_GET_FLAG 0
+#define RELEASE_PAGE put_user_page
+#endif
+
 static int memflow_vm_mem_release(struct inode *inode, struct file *file)
 {
 	struct vm_mem_data *data = file->private_data;
@@ -195,7 +204,7 @@ static int memflow_vm_mem_release(struct inode *inode, struct file *file)
 	if (data) {
 		if (data->pages) {
 			for (i = 0; i < data->nr_pages; i++)
-				put_page(data->pages[i]);
+				RELEASE_PAGE(data->pages[i]);
 			vfree(data->pages);
 		}
 
@@ -210,7 +219,7 @@ static int memflow_vm_mem_mmap(struct file *file, struct vm_area_struct *vma)
 	struct vm_mem_data *data = file->private_data;
 	unsigned long nr_pages = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
 	int i, ret = -1;
-	unsigned long foll_flags = FOLL_LONGTERM|FOLL_GET;
+	unsigned long foll_flags = PAGE_GET_FLAG|FOLL_GET;
 	pgprot_t remap_flags = PAGE_SHARED;
 	struct vm_area_struct **tmp_vmas;
 
@@ -263,7 +272,7 @@ static int memflow_vm_mem_mmap(struct file *file, struct vm_area_struct *vma)
 
 put_pages:
 	for (i = 0; i < data->nr_pages; i++)
-		put_page(data->pages[i]);
+		RELEASE_PAGE(data->pages[i]);
 free_pages:
 	vfree(data->pages);
 	data->nr_pages = 0;
@@ -332,7 +341,6 @@ static void remap_vmas(struct vm_mapped_data *data, struct task_struct *otask)
 	unsigned long offset;
 
 	for (i = 0; i < data->mapped_vma_count; i++) {
-
 		mapped_vma = data->vma_maps + i;
 
 		vma = find_vma(otask->mm, mapped_vma->start);
@@ -410,7 +418,7 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 	struct file *file;
 	struct task_struct *other_task;
 	struct mm_struct *other_mm;
-    vm_memslot_t __user *user_slots;
+	vm_map_info_t user_info_copied;
 
 	other_task = pid_task(find_vpid(kvm->userspace_pid), PIDTYPE_PID);
 
@@ -431,11 +439,11 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 	priv->mapped_vma_count = 0;
 	priv->vm_map_info.slot_count = 0;
 
-	if (copy_from_user(&priv->vm_map_info, user_info, sizeof(vm_map_info_t)))
+	if (copy_from_user(&user_info_copied, user_info, sizeof(vm_map_info_t)))
 		goto free_alloc;
-    
-    user_slots = priv->vm_map_info.slots;
-    priv->vm_map_info.slots = priv->map_slots;
+	
+	priv->vm_map_info = user_info_copied;
+	priv->vm_map_info.slots = priv->map_slots;
 
 	if (!priv->vm_map_info.slot_count)
 		goto free_alloc;
@@ -472,9 +480,11 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 	if (!priv->mapped_vma_count)
 		goto release_file;
 
-	if (copy_to_user(user_info, &priv->vm_map_info, sizeof(vm_map_info_t)))
+	user_info_copied.slot_count = priv->vm_map_info.slot_count;
+
+	if (copy_to_user(user_info, &user_info_copied, sizeof(vm_map_info_t)))
 		goto release_file;
-	if (priv->vm_map_info.slot_count && copy_to_user(user_slots, &priv->vm_map_info, sizeof(*user_slots) * priv->vm_map_info.slot_count))
+	if (priv->vm_map_info.slot_count && copy_to_user(user_info_copied.slots, priv->vm_map_info.slots, sizeof(vm_memslot_t) * priv->vm_map_info.slot_count))
 		goto release_file;
 
 	fd_install(fd, file);

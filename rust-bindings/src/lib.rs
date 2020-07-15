@@ -86,7 +86,7 @@ impl VMHandle {
         vm_info.slot_count = slot_count as u32;
         vm_info.slots = memslots.as_mut_ptr();
 
-        let ret = unsafe { ioctl(self.vm.as_raw_fd(), IO_MEMFLOW_MAP_VM as u64, &mut vm_info) };
+        let ret = unsafe { ioctl(self.vm.as_raw_fd(), IO_MEMFLOW_VM_INFO as u64, &mut vm_info) };
 
         if ret < 0 {
             Err(std::io::Error::last_os_error())
