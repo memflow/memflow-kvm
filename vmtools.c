@@ -459,12 +459,19 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 	mutex_lock(&kvm->lock);
 	mutex_lock(&kvm->slots_lock);
 
-	if ((memslot_count = get_sorted_memslots(kvm_memslots(kvm), priv->vm_map_info.slot_count, priv->vm_map_info.slots)) == -1)
-		goto unlock_kvm;
+	if ((memslot_count = get_sorted_memslots(kvm_memslots(kvm), priv->vm_map_info.slot_count, priv->vm_map_info.slots)) == -1) {
+        mutex_unlock(&kvm->lock);
+        mutex_unlock(&kvm->slots_lock);
+		goto put_fd;
+    }
 
 	priv->vm_map_info.slot_count = memslot_count;
 
 	down_write(&other_mm->mmap_sem);
+	
+    // Once we hold mmap_sem, the slots won't be freed so there is no purpose to hold the locks
+    mutex_unlock(&kvm->lock);
+	mutex_unlock(&kvm->slots_lock);
 
 	// First order of business is to grab all unique mappings to memslots (that are backed by some kind of file)
 	find_unique_vmas(priv, other_mm);
@@ -490,8 +497,6 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 	fd_install(fd, file);
 
 	up_write(&other_mm->mmap_sem);
-	mutex_unlock(&kvm->lock);
-	mutex_unlock(&kvm->slots_lock);
 
 	return fd;
 
@@ -501,9 +506,7 @@ release_file:
 	fput(file);
 unlock_mem:
 	up_write(&other_mm->mmap_sem);
-unlock_kvm:
-	mutex_unlock(&kvm->lock);
-	mutex_unlock(&kvm->slots_lock);
+put_fd:
 	put_unused_fd(fd);
 free_alloc:
 	if (priv)

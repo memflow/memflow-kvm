@@ -1,0 +1,15 @@
+
+[profile.bench]
+debug = true
+
+[workspace]
+members = [
+    "memflow-kvm-ioctl",
+    "memflow-kvm"
+]
+
+default-members = [
+    "memflow-kvm-ioctl",
+    "memflow-kvm"
+]
+

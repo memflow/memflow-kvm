@@ -1,3 +1,5 @@
 build
 *.out
 *.swp
+target
+Cargo.lock
