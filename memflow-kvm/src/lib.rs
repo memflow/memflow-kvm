@@ -10,11 +10,15 @@ use memflow_kvm_ioctl::VMHandle;
 /// Creates a new KVM Connector instance.
 #[connector(name = "kvm")]
 pub fn create_connector(args: &ConnectorArgs) -> Result<impl PhysicalMemory> {
-    let pid = args
-        .get_default()
-        .ok_or_else(|| Error::Connector("no pid specified"))?
-        .parse::<i32>()
-        .ok();
+    let pid = match args.get_default() {
+        Some(pidstr) => Some(
+            pidstr
+                .parse::<i32>()
+                .map_err(|_| Error::Connector("Failed to parse PID"))?,
+        ),
+        None => None,
+    };
+
     let vm = VMHandle::try_open(pid).map_err(|_| Error::Connector("Failed to get VM handle"))?;
     let (pid, memslots) = vm
         .info(64)
