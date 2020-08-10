@@ -2,6 +2,9 @@
 [profile.bench]
 debug = true
 
+[profile.release]
+lto = true
+
 [workspace]
 members = [
     "memflow-kvm-ioctl",

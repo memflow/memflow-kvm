@@ -10,9 +10,40 @@ use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
 // Do not depend on entire libc just for this function
 extern "C" {
     fn ioctl(fd: i32, request: __u64, ...) -> i32;
+    fn munmap(addr: *mut std::os::raw::c_void, len: usize) -> i32;
 }
 
 use std::io::Result;
+
+/// Structure assisting automatic memory map unmapping
+///
+/// It does not reference count on its own. Wrap it in Arc,
+/// or Rc for it to take place
+pub struct AutoMunmap {
+    memslots: Vec<vm_memslot>,
+}
+
+impl AutoMunmap {
+    /// Create automatic unmapping
+    ///
+    /// # Safety
+    ///
+    /// Drop implementation of this structure calls munmap on all mapped memory regions.
+    /// vm_memslots have to be correct for the runnings process, or causes undefined bahaviour.
+    pub unsafe fn new(memslots: Vec<vm_memslot>) -> Self {
+        Self { memslots }
+    }
+}
+
+impl Drop for AutoMunmap {
+    fn drop(&mut self) {
+        for slot in &self.memslots {
+            unsafe {
+                munmap(slot.host_base as _, slot.map_size as _);
+            }
+        }
+    }
+}
 
 /// Handle to memflow's kernel module
 ///
