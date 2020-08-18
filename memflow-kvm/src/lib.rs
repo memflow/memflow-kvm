@@ -1,39 +1,45 @@
 use log::{debug, info};
 
+use memflow_core::connector::inventory::CloneablePhysicalMemory;
 use memflow_core::connector::{ConnectorArgs, MappedPhysicalMemory};
-use memflow_core::mem::cloneable_slice::CloneableSliceMut;
 use memflow_core::mem::MemoryMap;
-use memflow_core::mem::PoolablePhysicalMemory;
 use memflow_core::types::Address;
 use memflow_core::{Error, Result};
 use memflow_derive::connector;
 use memflow_kvm_ioctl::{AutoMunmap, VMHandle};
 use std::sync::Arc;
 
-#[derive(Clone)]
-struct KVMMapData<T: Clone> {
+struct KVMMapData<T> {
     handle: Arc<AutoMunmap>,
     mappings: MemoryMap<T>,
+    addr_mappings: MemoryMap<(Address, usize)>,
 }
 
-impl<T: Clone> AsRef<MemoryMap<T>> for KVMMapData<T> {
+impl<'a> Clone for KVMMapData<&'a mut [u8]> {
+    fn clone(&self) -> Self {
+        unsafe { Self::from_addrmap_mut(self.handle.clone(), self.addr_mappings.clone()) }
+    }
+}
+
+impl<T> AsRef<MemoryMap<T>> for KVMMapData<T> {
     fn as_ref(&self) -> &MemoryMap<T> {
         &self.mappings
     }
 }
 
-impl<'a> KVMMapData<CloneableSliceMut<'a, u8>> {
+impl<'a> KVMMapData<&'a mut [u8]> {
     unsafe fn from_addrmap_mut(handle: Arc<AutoMunmap>, map: MemoryMap<(Address, usize)>) -> Self {
         Self {
             handle,
-            mappings: map.clone().into_cloneable_bufmap_mut(),
+            mappings: map.clone().into_bufmap_mut(),
+            addr_mappings: map,
         }
     }
 }
 
 /// Creates a new KVM Connector instance.
 #[connector(name = "kvm")]
-pub fn create_connector(args: &ConnectorArgs) -> Result<impl PoolablePhysicalMemory> {
+pub fn create_connector(args: &ConnectorArgs) -> Result<impl CloneablePhysicalMemory> {
     let pid = match args.get_default() {
         Some(pidstr) => Some(
             pidstr
@@ -81,5 +87,9 @@ pub fn create_connector(args: &ConnectorArgs) -> Result<impl PoolablePhysicalMem
 
     let munmap = Arc::new(unsafe { AutoMunmap::new(mapped_memslots) });
 
-    Ok(unsafe { MappedPhysicalMemory::with_info(KVMMapData::from_addrmap_mut(munmap, mem_map)) })
+    let map_data = unsafe { KVMMapData::from_addrmap_mut(munmap, mem_map) };
+
+    let mem = MappedPhysicalMemory::with_info(map_data);
+
+    Ok(mem)
 }
