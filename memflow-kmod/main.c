@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0
 #include "vmtools.h"
 #include <linux/types.h>
 #include <linux/version.h>
 #include <linux/module.h>
 #include <linux/miscdevice.h>
-#include "mabi.h"
+#include "../mabi.h"
 #include "main.h"
 #include "kallsyms/kallsyms.h"
 #include "kallsyms/kallsyms.c"

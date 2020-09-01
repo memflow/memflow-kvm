@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+
 #ifndef MEMFLOW_H
 #define MEMFLOW_H
 

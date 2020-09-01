@@ -5,7 +5,7 @@ ccflags-y += ${MCFLAGS}
 CC += ${MCFLAGS}
 KDIR := /lib/modules/$(shell uname -r)/build
 ifndef OUT_DIR
-	KOUTPUT := $(PWD)/build
+	KOUTPUT := $(PWD)/../build
 else
 	KOUTPUT := $(OUT_DIR)
 endif

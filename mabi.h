@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: (GPL-2.0 WITH Linux-syscall-note) OR MIT */
+
 #ifndef MABI_H
 #define MABI_H
 
@@ -6,6 +8,7 @@
  * @brief Define memflow kernel module ABI
  *
  * Provides all structures and ioctls for interacting with memflow's kernel module
+ *
 */
 
 #include <linux/types.h>

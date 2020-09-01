@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: GPL-2.0 */
+
 #ifndef VMTOOLS_H
 #define VMTOOLS_H
 
