@@ -1,4 +1,4 @@
-#include "../mabi.h"
+#include "mabi.h"
 #include <stddef.h>
 
 const size_t IO_MEMFLOW_OPEN_VM = MEMFLOW_OPEN_VM;
