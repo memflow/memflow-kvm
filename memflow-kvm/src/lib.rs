@@ -1,7 +1,7 @@
 use log::{debug, info};
 
-use memflow_core::mem::CloneablePhysicalMemory;
 use memflow_core::connector::{ConnectorArgs, MappedPhysicalMemory};
+use memflow_core::mem::CloneablePhysicalMemory;
 use memflow_core::mem::MemoryMap;
 use memflow_core::types::Address;
 use memflow_core::{Error, Result};

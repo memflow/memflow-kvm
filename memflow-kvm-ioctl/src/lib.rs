@@ -85,7 +85,13 @@ impl VMHandle {
     /// * `pid` - optional process identifier. If it is `None`, or `Some(0)`, handle to any of the KVM
     /// VMs gets retrieved.
     pub fn try_open_handle(memflow: &ModuleHandle, pid: Option<i32>) -> Result<Self> {
-        let vm_fd: RawFd = unsafe { ioctl(memflow.as_raw_fd(), IO_MEMFLOW_OPEN_VM as u64, pid) };
+        let vm_fd: RawFd = unsafe {
+            ioctl(
+                memflow.as_raw_fd(),
+                IO_MEMFLOW_OPEN_VM as u64,
+                pid.unwrap_or_default(),
+            )
+        };
 
         if vm_fd < 0 {
             Err(std::io::Error::last_os_error())
