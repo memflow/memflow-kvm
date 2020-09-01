@@ -1,10 +1,9 @@
 use log::{debug, info};
 
-use memflow_core::connector::{ConnectorArgs, MappedPhysicalMemory};
-use memflow_core::mem::CloneablePhysicalMemory;
-use memflow_core::mem::MemoryMap;
-use memflow_core::types::Address;
-use memflow_core::{Error, Result};
+use memflow::connector::{ConnectorArgs, MappedPhysicalMemory};
+use memflow::mem::{CloneablePhysicalMemory, MemoryMap};
+use memflow::types::Address;
+use memflow::{Error, Result};
 use memflow_derive::connector;
 use memflow_kvm_ioctl::{AutoMunmap, VMHandle};
 use std::sync::Arc;
