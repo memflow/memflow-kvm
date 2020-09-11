@@ -1,6 +1,9 @@
 name: Build the kernel module
 
-on: [push, pull_request]
+on:
+  push:
+    tags:
+      - 'v*'
 
 jobs:
 
@@ -31,3 +34,29 @@ jobs:
           export F="$(sudo find /var/lib/dkms/${BUILT_MODULE_NAME}/${PACKAGE_VERSION}/tarball/${BUILT_MODULE_NAME}-${PACKAGE_VERSION}*.tar.gz)"
           echo "::set-output name=path::$F"
           echo "::set-output name=name::$(basename $F)"
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+        - name: Upload Deb File
+          uses: actions/upload-release-asset@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            upload_url: ${{ steps.create_release.outputs.upload_url }}
+            asset_path: ${{ steps.dkms_path.outputs.path }}
+            asset_name: ${{ steps.dkms_path.outputs.name }}
+        - name: Upload Tarball File
+          uses: actions/upload-release-asset@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            upload_url: ${{ steps.create_release.outputs.upload_url }}
+            asset_path: ${{ steps.tarball_path.outputs.path }}
+            asset_name: ${{ steps.tarball_path.outputs.name }}
