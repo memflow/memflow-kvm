@@ -8,8 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: source dkms.conf
-      - run: export DKMS_DIR=/usr/src/${BUILT_MODULE_NAME}-${PACKAGE_VERSION}
+      - run: source dkms.conf && echo '::set-env name=BUILT_MODULE_NAME::$BUILT_MODULE_NAME' && echo '::set-env name=PACKAGE_VERSION::$PACKAGE_VERSION'
+      - run: echo '::set-env name=DKMS_DIR::/usr/src/${BUILT_MODULE_NAME}-${PACKAGE_VERSION}'
       - run: mkdir $DKMS_DIR
       - run: cp -r * $DKMS_DIR
       - run: dkms build -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION
