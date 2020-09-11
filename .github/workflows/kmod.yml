@@ -9,10 +9,9 @@ jobs:
     continue-on-error: true
     steps:
       - name: Checkout submodules
-        uses: srt32/git-actions@v0.0.3
-        with:
-          args: git submodule update --init --recursive
       - uses: actions/checkout@v2
+		with:
+		  submodules: true
       - run: sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install dkms linux-headers-`uname -r` build-essential
       - run: source dkms.conf && echo "::set-env name=BUILT_MODULE_NAME::$BUILT_MODULE_NAME" && echo "::set-env name=PACKAGE_VERSION::$PACKAGE_VERSION"
       - run: echo "::set-env name=DKMS_DIR::/usr/src/${BUILT_MODULE_NAME}-${PACKAGE_VERSION}"
