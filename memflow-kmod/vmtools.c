@@ -9,6 +9,7 @@
 #include <linux/mm.h>
 #include <linux/mman.h>
 #include <linux/version.h>
+#include "mmap_lock.h"
 
 static int memflow_vm_release(struct inode *inode, struct file *filp);
 static long memflow_vm_ioctl(struct file *filp, unsigned int cmd, unsigned long argp);
@@ -468,7 +469,7 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 
 	priv->vm_map_info.slot_count = memslot_count;
 
-	down_write(&other_mm->mmap_sem);
+	mmap_write_lock(other_mm);
 	
     // Once we hold mmap_sem, the slots won't be freed so there is no purpose to hold the locks
     mutex_unlock(&kvm->lock);
@@ -497,7 +498,7 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 
 	fd_install(fd, file);
 
-	up_write(&other_mm->mmap_sem);
+	mmap_write_unlock(other_mm);
 
 	return fd;
 
@@ -506,7 +507,7 @@ release_file:
 	priv = NULL;
 	fput(file);
 unlock_mem:
-	up_write(&other_mm->mmap_sem);
+	mmap_write_unlock(other_mm);
 put_fd:
 	put_unused_fd(fd);
 free_alloc:
