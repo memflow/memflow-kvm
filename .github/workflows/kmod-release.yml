@@ -44,19 +44,19 @@ jobs:
           release_name: Release ${{ github.ref }}
           draft: false
           prerelease: false
-        - name: Upload Deb File
-          uses: actions/upload-release-asset@v1
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-            upload_url: ${{ steps.create_release.outputs.upload_url }}
-            asset_path: ${{ steps.dkms_path.outputs.path }}
-            asset_name: ${{ steps.dkms_path.outputs.name }}
-        - name: Upload Tarball File
-          uses: actions/upload-release-asset@v1
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          with:
-            upload_url: ${{ steps.create_release.outputs.upload_url }}
-            asset_path: ${{ steps.tarball_path.outputs.path }}
-            asset_name: ${{ steps.tarball_path.outputs.name }}
+      - name: Upload Deb File
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.dkms_path.outputs.path }}
+          asset_name: ${{ steps.dkms_path.outputs.name }}
+      - name: Upload Tarball File
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ${{ steps.tarball_path.outputs.path }}
+          asset_name: ${{ steps.tarball_path.outputs.name }}
