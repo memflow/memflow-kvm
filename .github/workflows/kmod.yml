@@ -8,7 +8,6 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - name: Checkout submodules
       - uses: actions/checkout@v2
 		with:
 		  submodules: true
