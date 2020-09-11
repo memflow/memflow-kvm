@@ -8,6 +8,8 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
+      - name: Checkout submodules
+        uses: textbook/git-checkout-submodule-action@master
       - uses: actions/checkout@v2
       - run: sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install dkms linux-headers-`uname -r` build-essential
       - run: source dkms.conf && echo "::set-env name=BUILT_MODULE_NAME::$BUILT_MODULE_NAME" && echo "::set-env name=PACKAGE_VERSION::$PACKAGE_VERSION"
