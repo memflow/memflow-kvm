@@ -11,7 +11,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: true
-      - run: sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install dkms linux-headers-`uname -r` build-essential
+      - run: sudo apt-get update && sudo DEBIAN_FRONTEND=noninteractive apt-get install dkms linux-headers-`uname -r` build-essential devscripts
       - run: source dkms.conf && echo "::set-env name=BUILT_MODULE_NAME::$BUILT_MODULE_NAME" && echo "::set-env name=PACKAGE_VERSION::$PACKAGE_VERSION"
       - run: echo "::set-env name=DKMS_DIR::/usr/src/${BUILT_MODULE_NAME}-${PACKAGE_VERSION}"
       - run: sudo mkdir $DKMS_DIR
