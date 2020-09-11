@@ -10,9 +10,9 @@ This is a connector for Kernel based virtual machines, by using a driver that ma
 
 ## Setting up
 
-Install the connector using `./install.sh`. This will compile the connector in release mode and place it under `~/.local/lib/memflow/` directory, which can then be accessed by memflow clients. Do copy out the underlying shared library to `/usr/local/lib/memflow/` if you want to use it across all users.
+Recommended way is to use [memflowup](https://github.com/memflow/memflowup).
 
-## Setting up the module
+#### Setting up the module
 
 Stable versions are available under [releases](https://github.com/memflow/memflow-kvm/releases).
 
@@ -24,7 +24,11 @@ For other distributions, run this command:
 sudo dkms install --archive=memflow-${VERSION}-source-only.dkms.tar.gz
 ```
 
-### Manually building the module
+## Manually installing
+
+Install the connector using `./install.sh`. This will compile the connector in release mode and place it under `~/.local/lib/memflow/` directory, which can then be accessed by memflow clients. Do copy out the underlying shared library to `/usr/local/lib/memflow/` if you want to use it across all users.
+
+#### Building the module
 
 Run `make`. output will be placed in `build/memflow.ko`.
 
