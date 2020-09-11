@@ -1,4 +1,4 @@
-name: Build the kernel module
+name: Build the kernel module files and put them in the release
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 
 jobs:
 
-  build-kmod:
+  release-kmod:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -52,6 +52,7 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ steps.dkms_path.outputs.path }}
           asset_name: ${{ steps.dkms_path.outputs.name }}
+          asset_content_type: application/vnd.debian.binary-package
       - name: Upload Tarball File
         uses: actions/upload-release-asset@v1
         env:
@@ -60,3 +61,4 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ${{ steps.tarball_path.outputs.path }}
           asset_name: ${{ steps.tarball_path.outputs.name }}
+          asset_content_type: application/gzip
