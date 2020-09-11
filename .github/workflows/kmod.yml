@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - run: sudo apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install dkms
       - run: source dkms.conf && echo '::set-env name=BUILT_MODULE_NAME::$BUILT_MODULE_NAME' && echo '::set-env name=PACKAGE_VERSION::$PACKAGE_VERSION'
       - run: echo '::set-env name=DKMS_DIR::/usr/src/${BUILT_MODULE_NAME}-${PACKAGE_VERSION}'
       - run: sudo mkdir $DKMS_DIR
