@@ -13,6 +13,7 @@ jobs:
       - run: echo "::set-env name=DKMS_DIR::/usr/src/${BUILT_MODULE_NAME}-${PACKAGE_VERSION}"
       - run: sudo mkdir $DKMS_DIR
       - run: sudo cp -r * $DKMS_DIR
-      - run: sudo dkms build -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION
+      _ run: sudo ls $DKMS_DIR
+      - run: sudo dkms build -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION; sudo cat /var/lib/dkms/memflow/1.0/build/make.log
       - run: sudo dkms mktarball -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION --source-only
       - run: sudo dkms mkdeb -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION --source-only
