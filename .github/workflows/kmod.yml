@@ -5,7 +5,7 @@ on: [push, pull_request]
 jobs:
 
   build:
-    runs-on: fedora-latest
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - run: source dkms.conf
@@ -13,4 +13,5 @@ jobs:
       - run: mkdir $DKMS_DIR
       - run: cp -r * $DKMS_DIR
       - run: dkms build -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION
-      - run: dkms mkrpm -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION --source-only
+      - run: dkms mktarball -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION --source-only
+      - run: dkms mkdeb -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION --source-only
