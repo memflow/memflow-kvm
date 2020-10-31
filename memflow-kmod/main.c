@@ -13,7 +13,6 @@
 MODULE_DESCRIPTION("memflow kernel module used to support KVM backend");
 MODULE_AUTHOR("Heep");
 MODULE_LICENSE("GPL");
-MODULE_INFO(livepatch, "Y");
 
 static int memflow_init(void);
 static void memflow_exit(void);
