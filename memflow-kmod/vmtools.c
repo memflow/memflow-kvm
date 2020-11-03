@@ -243,7 +243,18 @@ static int memflow_vm_mem_mmap(struct file *file, struct vm_area_struct *vma)
 	if (!tmp_vmas)
 		goto free_pages;
 
-	data->nr_pages = get_user_pages_remote(data->wrapped_task, data->wrapped_task->mm, data->wrapped_vma->vm_start, nr_pages, foll_flags, data->pages, tmp_vmas, NULL);
+	data->nr_pages = get_user_pages_remote(
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
+		data->wrapped_task,
+#endif
+		data->wrapped_task->mm,
+		data->wrapped_vma->vm_start,
+		nr_pages,
+		foll_flags,
+		data->pages,
+		tmp_vmas,
+		NULL
+	);
 
 	// We really don't need them, but we vmalloc it, because the kernel kcallocs it, and it fails?
 	vfree(tmp_vmas);
