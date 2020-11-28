@@ -1,14 +1,16 @@
-use log::{debug, info};
+use log::{debug, info, Level};
 
 use memflow::connector::{ConnectorArgs, MappedPhysicalMemory};
-use memflow::mem::{CloneablePhysicalMemory, MemoryMap};
+use memflow::derive::connector;
+use memflow::error::{Error, Result};
+use memflow::mem::MemoryMap;
 use memflow::types::Address;
-use memflow::{Error, Result};
-use memflow_derive::connector;
 use memflow_kvm_ioctl::{AutoMunmap, VMHandle};
 use std::sync::Arc;
 
-struct KVMMapData<T> {
+pub type KVMConnector<'a> = MappedPhysicalMemory<&'a mut [u8], KVMMapData<&'a mut [u8]>>;
+
+pub struct KVMMapData<T> {
     handle: Arc<AutoMunmap>,
     mappings: MemoryMap<T>,
     addr_mappings: MemoryMap<(Address, usize)>,
@@ -37,8 +39,13 @@ impl<'a> KVMMapData<&'a mut [u8]> {
 }
 
 /// Creates a new KVM Connector instance.
-#[connector(name = "kvm")]
-pub fn create_connector(args: &ConnectorArgs) -> Result<impl CloneablePhysicalMemory> {
+#[connector(name = "kvm", ty = "KVMConnector")]
+pub fn create_connector(log_level: Level, args: &ConnectorArgs) -> Result<KVMConnector> {
+    simple_logger::SimpleLogger::new()
+        .with_level(log_level.to_level_filter())
+        .init()
+        .ok();
+
     let pid = match args.get_default() {
         Some(pidstr) => Some(
             pidstr
