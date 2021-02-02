@@ -190,8 +190,13 @@ struct vm_mem_data {
 	struct page **pages;
 };
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,7,0)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,7,0) && LINUX_VERSION_CODE < KERNEL_VERSION(5,10,0)
 #define PAGE_GET_FLAG FOLL_LONGTERM
+#else
+#define PAGE_GET_FLAG 0
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,7,0)
 #define RELEASE_PAGE put_page
 #else
 #define PAGE_GET_FLAG 0
