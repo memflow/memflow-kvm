@@ -17,8 +17,8 @@ crate-type = ["lib", "cdylib"]
 
 [dependencies]
 memflow-kvm-ioctl = { version = "0.1", path = "../memflow-kvm-ioctl" }
-memflow = { version = "0.1", git = "https://github.com/memflow/memflow.git", branch = "dev" }
-memflow-derive = { version = "0.1", git = "https://github.com/memflow/memflow.git", branch = "dev" }
+memflow = { version = "0.1" }
+memflow-derive = { version = "0.1" }
 log = { version = "0.4", default-features = false }
 
 [features]
