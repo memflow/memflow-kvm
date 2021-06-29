@@ -3,7 +3,12 @@ obj-y += memflow-kmod/
 MCFLAGS += -O3
 ccflags-y += ${MCFLAGS}
 CC += ${MCFLAGS}
-KDIR := /lib/modules/$(shell uname -r)/build
+
+ifndef KERNELDIR
+	KDIR := /lib/modules/$(shell uname -r)/build
+else
+	KDIR := $(KERNELDIR)
+endif
 
 ifndef OUT_DIR
 	KOUTPUT := $(PWD)/build
