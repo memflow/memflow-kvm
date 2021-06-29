@@ -13,12 +13,12 @@ fn main() {
         .derive_default(true)
         .use_core()
         .size_t_is_usize(true)
-        .whitelist_type("vm_memslot")
-        .whitelist_type("vm_map_info")
-        .whitelist_type("vm_info")
-        .whitelist_var("IO_MEMFLOW_OPEN_VM")
-        .whitelist_var("IO_MEMFLOW_VM_INFO")
-        .whitelist_var("IO_MEMFLOW_MAP_VM")
+        .allowlist_type("vm_memslot")
+        .allowlist_type("vm_map_info")
+        .allowlist_type("vm_info")
+        .allowlist_var("IO_MEMFLOW_OPEN_VM")
+        .allowlist_var("IO_MEMFLOW_VM_INFO")
+        .allowlist_var("IO_MEMFLOW_MAP_VM")
         .generate()
         .expect("Unable to generate bindings");
 

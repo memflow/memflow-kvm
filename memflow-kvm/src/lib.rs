@@ -1,9 +1,10 @@
 use log::{debug, info, Level};
 
-use memflow::connector::{ConnectorArgs, MappedPhysicalMemory};
+use memflow::connector::MappedPhysicalMemory;
 use memflow::derive::connector;
-use memflow::error::{Error, Result};
+use memflow::error::*;
 use memflow::mem::MemoryMap;
+use memflow::plugins::Args;
 use memflow::types::Address;
 use memflow_kvm_ioctl::{AutoMunmap, VMHandle};
 use std::sync::Arc;
@@ -39,8 +40,11 @@ impl<'a> KVMMapData<&'a mut [u8]> {
 }
 
 /// Creates a new KVM Connector instance.
-#[connector(name = "kvm", ty = "KVMConnector")]
-pub fn create_connector(log_level: Level, args: &ConnectorArgs) -> Result<KVMConnector> {
+#[connector(name = "kvm")]
+pub fn create_connector<'a>(
+    args: &Args,
+    log_level: Level,
+) -> Result<MappedPhysicalMemory<&'a mut [u8], KVMMapData<&'a mut [u8]>>> {
     simple_logger::SimpleLogger::new()
         .with_level(log_level.to_level_filter())
         .init()
@@ -50,15 +54,16 @@ pub fn create_connector(log_level: Level, args: &ConnectorArgs) -> Result<KVMCon
         Some(pidstr) => Some(
             pidstr
                 .parse::<i32>()
-                .map_err(|_| Error::Connector("Failed to parse PID"))?,
+                .map_err(|_| Error(ErrorOrigin::Connector, ErrorKind::ArgValidation))?,
         ),
         None => None,
     };
 
-    let vm = VMHandle::try_open(pid).map_err(|_| Error::Connector("Failed to get VM handle"))?;
+    let vm = VMHandle::try_open(pid)
+        .map_err(|_| Error(ErrorOrigin::Connector, ErrorKind::UnableToReadMemory))?;
     let (pid, memslots) = vm
         .info(64)
-        .map_err(|_| Error::Connector("Failed to get VM info"))?;
+        .map_err(|_| Error(ErrorOrigin::Connector, ErrorKind::UnableToReadMemory))?;
     debug!("pid={} memslots.len()={}", pid, memslots.len());
     for slot in memslots.iter() {
         debug!(
@@ -69,9 +74,10 @@ pub fn create_connector(log_level: Level, args: &ConnectorArgs) -> Result<KVMCon
             slot.host_base + slot.map_size
         );
     }
-    let mapped_memslots = vm
-        .map_vm(64)
-        .map_err(|_| Error::Connector("Failed to map VM mem"))?;
+    let mapped_memslots = vm.map_vm(64).map_err(|e| {
+        debug!("{:?}", e);
+        Error(ErrorOrigin::Connector, ErrorKind::UnableToMapFile)
+    })?;
 
     let mut mem_map = MemoryMap::new();
 
