@@ -1,12 +1,12 @@
 
 // builds the connector from source
 fn build_from_source(ctx) {
-	info("Installing connector")
+	info("Installing connector");
 	let repo_path = ctx.clone_repository();
 	cargo("build --release --all-features", repo_path);
 	ctx.copy_cargo_plugin_artifact(repo_path, name_to_lib(ctx.crate_name()));
-	info("Installing memflow kernel module")
-	dkms_install(repo_path)
+	info("Installing memflow kernel module");
+	dkms_install(repo_path);
 }
 
 // downloads a binary release of the plugin, still needs dkms
