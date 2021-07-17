@@ -6,7 +6,7 @@ fn build_from_source(ctx) {
 	cargo("build --release --all-features", repo_path);
 	ctx.copy_cargo_plugin_artifact(repo_path, name_to_lib(ctx.crate_name()));
 	info("Installing memflow kernel module");
-	dkms_install(repo_path);
+	ctx.dkms_install(repo_path);
 }
 
 // downloads a binary release of the plugin, still needs dkms
@@ -16,6 +16,6 @@ fn install(ctx) {
 	let artifact = download(ctx.github_release_artifact(release, libname));
 	write_plugin_artifact(artifact);
 	let tarball = download(ctx.github_release_artifact(release, "memflow-" + release.semver() + "-source-only.dkms.tar.gz"));
-	dkms_install(tarball);
+	ctx.dkms_install(tarball);
 }
 
