@@ -3,7 +3,7 @@
 fn build_from_source(ctx) {
 	info("Installing connector")
 	let repo_path = ctx.clone_repository();
-    cargo("build --release --all-features", repo_path);
+	cargo("build --release --all-features", repo_path);
 	ctx.copy_cargo_plugin_artifact(repo_path, name_to_lib(ctx.crate_name()));
 	info("Installing memflow kernel module")
 	dkms_install(repo_path)
