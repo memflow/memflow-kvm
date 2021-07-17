@@ -20,7 +20,6 @@ memflow-kvm-ioctl = { version = "0.1", path = "../memflow-kvm-ioctl" }
 memflow = { git = "https://github.com/memflow/memflow.git", branch = "next", features = ["plugins"] }
 log = { version = "0.4", default-features = false }
 simple_logger = "1.0"
-cglue = "0.1"
 
 [features]
 default = []
