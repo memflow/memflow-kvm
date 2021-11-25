@@ -6,7 +6,7 @@ use memflow::derive::connector;
 use memflow::error::*;
 use memflow::mem::MemoryMap;
 use memflow::plugins::Args;
-use memflow::types::Address;
+use memflow::types::{umem, Address};
 use memflow_kvm_ioctl::{AutoMunmap, VMHandle};
 use std::sync::Arc;
 
@@ -15,7 +15,7 @@ pub type KVMConnector<'a> = MappedPhysicalMemory<&'a mut [u8], KVMMapData<&'a mu
 pub struct KVMMapData<T> {
     handle: Arc<AutoMunmap>,
     mappings: MemoryMap<T>,
-    addr_mappings: MemoryMap<(Address, usize)>,
+    addr_mappings: MemoryMap<(Address, umem)>,
 }
 
 impl<'a> Clone for KVMMapData<&'a mut [u8]> {
@@ -31,7 +31,7 @@ impl<T> AsRef<MemoryMap<T>> for KVMMapData<T> {
 }
 
 impl<'a> KVMMapData<&'a mut [u8]> {
-    unsafe fn from_addrmap_mut(handle: Arc<AutoMunmap>, map: MemoryMap<(Address, usize)>) -> Self {
+    unsafe fn from_addrmap_mut(handle: Arc<AutoMunmap>, map: MemoryMap<(Address, umem)>) -> Self {
         Self {
             handle,
             mappings: map.clone().into_bufmap_mut(),
@@ -93,7 +93,7 @@ pub fn create_connector<'a>(
         );
         mem_map.push_remap(
             slot.base.into(),
-            slot.map_size as usize,
+            slot.map_size as umem,
             slot.host_base.into(),
         );
     }
