@@ -16,6 +16,8 @@ Recommended way is to use [memflowup](https://github.com/memflow/memflowup).
 
 #### Kernel module
 
+**Your kernel must be compiled with `CONFIG_KALLSYMS=y`, and `CONFIG_KALLSYMS_ALL=y` being set in kconfig.**
+
 Stable versions are available under [releases](https://github.com/memflow/memflow-kvm/releases).
 
 Debian/Ubuntu package can be installed with `sudo dpkg -i memflow-dkms_${VERSION}_amd64.deb`, where `VERSION` is the version of the downloaded module.
