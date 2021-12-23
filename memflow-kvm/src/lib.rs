@@ -1,4 +1,4 @@
-use log::{debug, info, Level};
+use log::{debug, info};
 
 use memflow::cglue;
 use memflow::connector::MappedPhysicalMemory;
@@ -44,13 +44,7 @@ impl<'a> KVMMapData<&'a mut [u8]> {
 #[connector(name = "kvm")]
 pub fn create_connector<'a>(
     args: &Args,
-    log_level: Level,
 ) -> Result<MappedPhysicalMemory<&'a mut [u8], KVMMapData<&'a mut [u8]>>> {
-    simple_logger::SimpleLogger::new()
-        .with_level(log_level.to_level_filter())
-        .init()
-        .ok();
-
     let pid = match args.get_default() {
         Some(pidstr) => Some(
             pidstr
