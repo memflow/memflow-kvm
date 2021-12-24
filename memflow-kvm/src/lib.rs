@@ -5,7 +5,7 @@ use memflow::connector::MappedPhysicalMemory;
 use memflow::derive::connector;
 use memflow::error::*;
 use memflow::mem::MemoryMap;
-use memflow::plugins::Args;
+use memflow::plugins::ConnectorArgs;
 use memflow::types::{umem, Address};
 use memflow_kvm_ioctl::{AutoMunmap, VMHandle};
 use std::sync::Arc;
@@ -43,9 +43,9 @@ impl<'a> KVMMapData<&'a mut [u8]> {
 /// Creates a new KVM Connector instance.
 #[connector(name = "kvm")]
 pub fn create_connector<'a>(
-    args: &Args,
+    args: &ConnectorArgs,
 ) -> Result<MappedPhysicalMemory<&'a mut [u8], KVMMapData<&'a mut [u8]>>> {
-    let pid = match args.get_default() {
+    let pid = match &args.target {
         Some(pidstr) => Some(
             pidstr
                 .parse::<i32>()
