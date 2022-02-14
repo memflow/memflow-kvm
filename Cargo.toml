@@ -3,7 +3,7 @@
 debug = true
 
 [profile.release]
-lto = true
+lto = "fat"
 
 [workspace]
 members = [

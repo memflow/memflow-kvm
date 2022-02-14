@@ -1,17 +1,21 @@
 use log::{debug, info};
 
-use memflow::connector::{ConnectorArgs, MappedPhysicalMemory};
-use memflow::mem::{CloneablePhysicalMemory, MemoryMap};
-use memflow::types::Address;
-use memflow::{Error, Result};
-use memflow_derive::connector;
+use memflow::cglue;
+use memflow::connector::MappedPhysicalMemory;
+use memflow::derive::connector;
+use memflow::error::*;
+use memflow::mem::MemoryMap;
+use memflow::plugins::ConnectorArgs;
+use memflow::types::{umem, Address};
 use memflow_kvm_ioctl::{AutoMunmap, VMHandle};
 use std::sync::Arc;
 
-struct KVMMapData<T> {
+pub type KVMConnector<'a> = MappedPhysicalMemory<&'a mut [u8], KVMMapData<&'a mut [u8]>>;
+
+pub struct KVMMapData<T> {
     handle: Arc<AutoMunmap>,
     mappings: MemoryMap<T>,
-    addr_mappings: MemoryMap<(Address, usize)>,
+    addr_mappings: MemoryMap<(Address, umem)>,
 }
 
 impl<'a> Clone for KVMMapData<&'a mut [u8]> {
@@ -27,7 +31,7 @@ impl<T> AsRef<MemoryMap<T>> for KVMMapData<T> {
 }
 
 impl<'a> KVMMapData<&'a mut [u8]> {
-    unsafe fn from_addrmap_mut(handle: Arc<AutoMunmap>, map: MemoryMap<(Address, usize)>) -> Self {
+    unsafe fn from_addrmap_mut(handle: Arc<AutoMunmap>, map: MemoryMap<(Address, umem)>) -> Self {
         Self {
             handle,
             mappings: map.clone().into_bufmap_mut(),
@@ -38,20 +42,23 @@ impl<'a> KVMMapData<&'a mut [u8]> {
 
 /// Creates a new KVM Connector instance.
 #[connector(name = "kvm")]
-pub fn create_connector(args: &ConnectorArgs) -> Result<impl CloneablePhysicalMemory> {
-    let pid = match args.get_default() {
+pub fn create_connector<'a>(
+    args: &ConnectorArgs,
+) -> Result<MappedPhysicalMemory<&'a mut [u8], KVMMapData<&'a mut [u8]>>> {
+    let pid = match &args.target {
         Some(pidstr) => Some(
             pidstr
                 .parse::<i32>()
-                .map_err(|_| Error::Connector("Failed to parse PID"))?,
+                .map_err(|_| Error(ErrorOrigin::Connector, ErrorKind::ArgValidation))?,
         ),
         None => None,
     };
 
-    let vm = VMHandle::try_open(pid).map_err(|_| Error::Connector("Failed to get VM handle"))?;
+    let vm = VMHandle::try_open(pid)
+        .map_err(|_| Error(ErrorOrigin::Connector, ErrorKind::UnableToReadMemory))?;
     let (pid, memslots) = vm
         .info(64)
-        .map_err(|_| Error::Connector("Failed to get VM info"))?;
+        .map_err(|_| Error(ErrorOrigin::Connector, ErrorKind::UnableToReadMemory))?;
     debug!("pid={} memslots.len()={}", pid, memslots.len());
     for slot in memslots.iter() {
         debug!(
@@ -62,9 +69,10 @@ pub fn create_connector(args: &ConnectorArgs) -> Result<impl CloneablePhysicalMe
             slot.host_base + slot.map_size
         );
     }
-    let mapped_memslots = vm
-        .map_vm(64)
-        .map_err(|_| Error::Connector("Failed to map VM mem"))?;
+    let mapped_memslots = vm.map_vm(64).map_err(|e| {
+        debug!("{:?}", e);
+        Error(ErrorOrigin::Connector, ErrorKind::UnableToMapFile)
+    })?;
 
     let mut mem_map = MemoryMap::new();
 
@@ -79,7 +87,7 @@ pub fn create_connector(args: &ConnectorArgs) -> Result<impl CloneablePhysicalMe
         );
         mem_map.push_remap(
             slot.base.into(),
-            slot.map_size as usize,
+            slot.map_size as umem,
             slot.host_base.into(),
         );
     }

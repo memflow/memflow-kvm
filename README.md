@@ -36,7 +36,24 @@ Install the connector using `./install.sh`. This will compile the connector in r
 
 #### Kernel module
 
+Initialize submodules:
+
+```
+git submodule update --init
+```
+
 Run `make`. output will be placed in `build/memflow.ko`.
+
+## FAQ
+
+Q. I'm getting this warning:
+
+```
+warning: couldn't execute `llvm-config --prefix` (error: No such file or directory (os error 2))
+warning: set the LLVM_CONFIG_PATH environment variable to the full path to a valid `llvm-config` executable (including the executable itself)
+```
+
+A. This warning is harmless and can be safely ignored.
 
 ## Licensing note
 
