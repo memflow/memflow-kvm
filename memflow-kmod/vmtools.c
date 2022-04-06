@@ -11,6 +11,12 @@
 #include <linux/version.h>
 #include "mmap_lock.h"
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
+#define kvm_for_each_memslot2(memslot, bkt, slots) (void)bkt; kvm_for_each_memslot(memslot, slots)
+#else
+#define kvm_for_each_memslot2 kvm_for_each_memslot
+#endif
+
 static int memflow_vm_release(struct inode *inode, struct file *filp);
 static long memflow_vm_ioctl(struct file *filp, unsigned int cmd, unsigned long argp);
 
@@ -106,7 +112,7 @@ static int get_sorted_memslots(struct kvm_memslots *slots, int max_slots, vm_mem
 	int slot_count, bkt;
 
 	slot_count = 0;
-	kvm_for_each_memslot(slot, bkt, slots) {
+	kvm_for_each_memslot2(slot, bkt, slots) {
 		if (slot->npages && slot->npages != -1) {
 			slots_out[slot_count++] = (vm_memslot_t) {
 				.base = gfn_to_gpa(slot->base_gfn),
@@ -149,7 +155,7 @@ static int get_vm_info(struct kvm *kvm, vm_info_t __user *user_info)
 	// Clamp user provided sizes...
 	slots = kvm_memslots(kvm);
 	used_slots = 0;
-	kvm_for_each_memslot(slot, bkt, slots) {
+	kvm_for_each_memslot2(slot, bkt, slots) {
 		used_slots++;
 	}
 	if (kernel_info.slot_count > used_slots)
