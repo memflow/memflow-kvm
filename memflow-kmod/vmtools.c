@@ -103,17 +103,11 @@ static int memslot_compare(const void *lhs, const void *rhs) {
 static int get_sorted_memslots(struct kvm_memslots *slots, int max_slots, vm_memslot_t *slots_out)
 {
 	struct kvm_memory_slot *slot;
-	int slot_count, i;
+	int slot_count, bkt;
 
 	slot_count = 0;
-	for (i = 0; i < KVM_MEM_SLOTS_NUM && slot_count < max_slots && slot_count < slots->used_slots; i++) {
-		slot = slots->memslots + i;
+	kvm_for_each_memslot(slot, bkt, slots) {
 		if (slot->npages && slot->npages != -1) {
-			if (slot_count >= slots->used_slots) {
-				mprintk("Critical error: memory slot overflow\n");
-				return -1;
-			}
-
 			slots_out[slot_count++] = (vm_memslot_t) {
 				.base = gfn_to_gpa(slot->base_gfn),
 				.host_base = slot->userspace_addr,
@@ -134,8 +128,10 @@ static int get_vm_info(struct kvm *kvm, vm_info_t __user *user_info)
 	vm_info_t kernel_info;
 	vm_memslot_t *memslot_map;
 	vm_memslot_t __user *user_slots;
-	int ret;
-	u32 slot_count;
+	struct kvm_memslots *slots;
+	struct kvm_memory_slot *slot;
+	int ret, bkt;
+	u32 used_slots, slot_count;
 
 	ret = -1;
 
@@ -151,8 +147,13 @@ static int get_vm_info(struct kvm *kvm, vm_info_t __user *user_info)
 		goto unlock_kvm;
 
 	// Clamp user provided sizes...
-	if (kernel_info.slot_count > kvm_memslots(kvm)->used_slots)
-		kernel_info.slot_count = kvm_memslots(kvm)->used_slots;
+	slots = kvm_memslots(kvm);
+	used_slots = 0;
+	kvm_for_each_memslot(slot, bkt, slots) {
+		used_slots++;
+	}
+	if (kernel_info.slot_count > used_slots)
+		kernel_info.slot_count = used_slots;
 
 	// Supposedly exactly used_slots should have non-zero sized values, but what if not?
 	memslot_map = vmalloc(sizeof(*memslot_map) * kernel_info.slot_count);
