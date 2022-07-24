@@ -1,6 +1,5 @@
 use log::{debug, info};
 
-use memflow::cglue;
 use memflow::connector::MappedPhysicalMemory;
 use memflow::derive::connector;
 use memflow::error::*;
