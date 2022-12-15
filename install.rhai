@@ -5,10 +5,12 @@ fn build_from_path(ctx, repo_path) {
 	cargo("build --release --all-features", repo_path);
 	ctx.copy_cargo_plugin_artifact(repo_path, name_to_lib(ctx.crate_name()));
 
-	info("Installing memflow kernel module");
+	info("Installing memflow-kvm kernel module");
 	ctx.dkms_install(repo_path);
 
-	info("memflow kernel module installation finished");
+	post_install();
+
+	info("memflow-kvm kernel module installation finished");
 	info("you might have to manually invoke 'modprobe memflow' after installation and make sure the /dev/memflow device is present.");
 }
 
@@ -33,10 +35,20 @@ fn install(ctx) {
 	let artifact = download(ctx.github_release_artifact(release, libname));
 	write_plugin_artifact(artifact);
 
-	info("Installing memflow kernel module");
+	info("Installing memflow-kvm kernel module");
 	let tarball = download(ctx.github_release_artifact(release, "memflow-" + release.semver() + "-source-only.dkms.tar.gz"));
 	ctx.dkms_install(tarball);
 
-	info("memflow kernel module installation finished");
+	post_install();
+
+	info("memflow-kvm kernel module installation finished");
 	info("you might have to manually invoke 'modprobe memflow' after installation and make sure the /dev/memflow device is present.");
+}
+
+fn post_install() {
+	try {
+		udev_add_rule("memflow-kvm", "KERNEL==\"memflow\" SUBSYSTEM==\"misc\" GROUP=\"memflow\" MODE=\"0660\"");
+	} catch (err) {
+		info("Your memflowup installation might be out of date, please make sure to use the latest version.")
+	}
 }
