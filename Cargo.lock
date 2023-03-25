@@ -238,9 +238,9 @@ dependencies = [
 
 [[package]]
 name = "darling"
-version = "0.14.4"
+version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b750cb3417fd1b327431a470f388520309479ab0bf5e323505daf0290cd3850"
+checksum = "a01d95850c592940db9b8194bc39f4bc0e89dee5c4265e4b1807c34a9aba453c"
 dependencies = [
  "darling_core",
  "darling_macro",
@@ -248,9 +248,9 @@ dependencies = [
 
 [[package]]
 name = "darling_core"
-version = "0.14.4"
+version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "109c1ca6e6b7f82cc233a97004ea8ed7ca123a9af07a8230878fcfda9b158bf0"
+checksum = "859d65a907b6852c9361e3185c862aae7fafd2887876799fa55f5f99dc40d610"
 dependencies = [
  "fnv",
  "ident_case",
@@ -262,9 +262,9 @@ dependencies = [
 
 [[package]]
 name = "darling_macro"
-version = "0.14.4"
+version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4aab4dbc9f7611d8b55048a3a16d2d010c2c8334e46304b40ac1cc14bf3b48e"
+checksum = "9c972679f83bdf9c42bd905396b6c3588a843a17f0f16dfcfa3e2c5d57441835"
 dependencies = [
  "darling_core",
  "quote",
@@ -469,6 +469,8 @@ checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 [[package]]
 name = "memflow"
 version = "0.2.0-beta10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a7f18ed9240420aadc21d8ba082e4a27c526fd3155a829b4de94013eb7855766"
 dependencies = [
  "abi_stable",
  "bitflags",
@@ -498,6 +500,8 @@ dependencies = [
 [[package]]
 name = "memflow-derive"
 version = "0.2.0-beta3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ee50e66f855a8a9c93b7c107fab899b25952ba8c7f0e97602a662a99c84fbef7"
 dependencies = [
  "darling",
  "proc-macro-crate",
@@ -508,7 +512,7 @@ dependencies = [
 
 [[package]]
 name = "memflow-kvm"
-version = "0.2.0-beta7"
+version = "0.2.0-beta10"
 dependencies = [
  "log",
  "memflow",
