@@ -129,6 +129,7 @@ impl VMHandle {
             Err(std::io::Error::last_os_error())
         } else {
             memslots.truncate(vm_info.slot_count as usize);
+            #[allow(clippy::unnecessary_cast)]
             Ok((vm_info.userspace_pid as i32, memslots))
         }
     }

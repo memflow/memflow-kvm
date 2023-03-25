@@ -16,3 +16,5 @@ default-members = [
     "memflow-kvm"
 ]
 
+[patch.crates-io]
+memflow = { path = "../memflow/memflow" }
