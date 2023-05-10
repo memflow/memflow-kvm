@@ -274,7 +274,11 @@ static int memflow_vm_mem_mmap(struct file *file, struct vm_area_struct *vma)
 	if (data->nr_pages != nr_pages)
 		goto put_pages;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,3,0)
 	vma->vm_flags |= VM_PFNMAP | VM_DONTDUMP;
+#else
+	vm_flags_set(vma, VM_PFNMAP | VM_DONTDUMP);
+#endif
 
 	ret = 0;
 
