@@ -32,7 +32,7 @@ sudo dkms install --archive=memflow-${VERSION}-source-only.dkms.tar.gz
 
 #### Connector
 
-Install the connector using `./install.sh`. This will compile the connector in release mode and place it under `~/.local/lib/memflow/` directory, which can then be accessed by memflow clients. Do copy out the underlying shared library to `/usr/local/lib/memflow/` if you want to use it across all users.
+Install the connector using `memflowup build --name memflow-kvm`. This will compile the connector in release mode and place it under `~/.local/lib/memflow/` directory, which can then be accessed by memflow clients. Do copy out the underlying shared library to `/usr/local/lib/memflow/` if you want to use it across all users.
 
 #### Kernel module
 
