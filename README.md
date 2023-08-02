@@ -44,6 +44,12 @@ git submodule update --init
 
 Run `make`. output will be placed in `build/memflow.ko`.
 
+To then install the built module run
+
+```
+memflowup build --name memflow-kvm --script install.rhai
+```
+
 ## FAQ
 
 Q. I'm getting this warning:
