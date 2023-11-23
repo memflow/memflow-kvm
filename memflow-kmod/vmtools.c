@@ -235,7 +235,9 @@ static int memflow_vm_mem_mmap(struct file *file, struct vm_area_struct *vma)
 	int i, ret = -1;
 	unsigned long foll_flags = PAGE_GET_FLAG|FOLL_GET;
 	pgprot_t remap_flags = PAGE_SHARED;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,5,0)
 	struct vm_area_struct **tmp_vmas;
+#endif
 
 	if (vma->vm_flags & VM_WRITE)
 		foll_flags |= FOLL_WRITE;
@@ -250,10 +252,11 @@ static int memflow_vm_mem_mmap(struct file *file, struct vm_area_struct *vma)
 	if (!data->pages)
 		goto do_return;
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,5,0)
 	tmp_vmas = vmalloc(sizeof(*tmp_vmas) * nr_pages);
-
 	if (!tmp_vmas)
 		goto free_pages;
+#endif
 
 	data->nr_pages = get_user_pages_remote(
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5,9,0)
@@ -264,12 +267,16 @@ static int memflow_vm_mem_mmap(struct file *file, struct vm_area_struct *vma)
 		nr_pages,
 		foll_flags,
 		data->pages,
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,5,0)
 		tmp_vmas,
+#endif
 		NULL
 	);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,5,0)
 	// We really don't need them, but we vmalloc it, because the kernel kcallocs it, and it fails?
 	vfree(tmp_vmas);
+#endif
 
 	if (data->nr_pages != nr_pages)
 		goto put_pages;
@@ -302,7 +309,9 @@ static int memflow_vm_mem_mmap(struct file *file, struct vm_area_struct *vma)
 put_pages:
 	for (i = 0; i < data->nr_pages; i++)
 		RELEASE_PAGE(data->pages[i]);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(6,5,0)
 free_pages:
+#endif
 	vfree(data->pages);
 	data->nr_pages = 0;
 	data->pages = NULL;
