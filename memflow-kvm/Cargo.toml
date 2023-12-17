@@ -1,6 +1,6 @@
 [package]
 name = "memflow-kvm"
-version = "0.2.0-beta10"
+version = "0.2.0-beta11"
 authors = ["Aurimas Blažulionis <0x60@pm.me>"]
 edition = "2021"
 rust-version = "1.65.0"
@@ -18,7 +18,7 @@ crate-type = ["lib", "cdylib"]
 
 [dependencies]
 memflow-kvm-ioctl = { version = "0.1.1", path = "../memflow-kvm-ioctl" }
-memflow = { version = "=0.2.0-beta10", features = ["plugins"] }
+memflow = { version = "=0.2.0-beta11", features = ["plugins"] }
 log = { version = "0.4", default-features = false }
 
 [features]
