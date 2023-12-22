@@ -44,6 +44,8 @@ impl<'a> KVMMapData<&'a mut [u8]> {
 pub fn create_connector<'a>(
     args: &ConnectorArgs,
 ) -> Result<MappedPhysicalMemory<&'a mut [u8], KVMMapData<&'a mut [u8]>>> {
+    static ERROR_UNABLE_TO_READ_MEMORY: &str = "Could not access the memflow device at /dev/memflow. Please make sure that you installed the dkms module properly and that it is loaded via `modprobe memflow`. Also ensure that you have read and write access to /dev/memflow. For further information check the Readme at https://github.com/memflow/memflow-kvm";
+
     let pid = match &args.target {
         Some(pidstr) => Some(
             pidstr
@@ -53,11 +55,14 @@ pub fn create_connector<'a>(
         None => None,
     };
 
-    let vm = VMHandle::try_open(pid)
-        .map_err(|_| Error(ErrorOrigin::Connector, ErrorKind::UnableToReadMemory))?;
-    let (pid, memslots) = vm
-        .info(64)
-        .map_err(|_| Error(ErrorOrigin::Connector, ErrorKind::UnableToReadMemory))?;
+    let vm = VMHandle::try_open(pid).map_err(|_| {
+        Error(ErrorOrigin::Connector, ErrorKind::UnableToReadMemory)
+            .log_error(ERROR_UNABLE_TO_READ_MEMORY)
+    })?;
+    let (pid, memslots) = vm.info(64).map_err(|_| {
+        Error(ErrorOrigin::Connector, ErrorKind::UnableToReadMemory)
+            .log_error(ERROR_UNABLE_TO_READ_MEMORY)
+    })?;
     debug!("pid={} memslots.len()={}", pid, memslots.len());
     for slot in memslots.iter() {
         debug!(
@@ -69,8 +74,10 @@ pub fn create_connector<'a>(
         );
     }
     let mapped_memslots = vm.map_vm(64).map_err(|e| {
-        debug!("{:?}", e);
-        Error(ErrorOrigin::Connector, ErrorKind::UnableToMapFile)
+        Error(ErrorOrigin::Connector, ErrorKind::UnableToMapFile).log_error(format!(
+            "The mapped memory slots for the vm could not be read: {}",
+            e
+        ))
     })?;
 
     let mut mem_map = MemoryMap::new();

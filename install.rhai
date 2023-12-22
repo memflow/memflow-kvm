@@ -1,3 +1,10 @@
+fn install_message() {
+	info("memflow-kvm kernel module installation finished");
+	info("you might have to manually invoke 'modprobe memflow' after installation and make sure the /dev/memflow device is present and you have access to it.");
+	info("it is also recommended to setup a 'memflow' user group in linux and add your user to it");
+	info("additionally, you might want to setup a udev rule thatll make /dev/memflow accessible to that group.");
+	info("see the readme for more details");
+}
 
 // builds the connector from a given path (never called by the engine directly)
 fn build_from_path(ctx, repo_path) {
@@ -10,8 +17,7 @@ fn build_from_path(ctx, repo_path) {
 
 	post_install();
 
-	info("memflow-kvm kernel module installation finished");
-	info("you might have to manually invoke 'modprobe memflow' after installation and make sure the /dev/memflow device is present.");
+	install_message();
 }
 
 // builds the connector from local path
@@ -41,8 +47,7 @@ fn install(ctx) {
 
 	post_install();
 
-	info("memflow-kvm kernel module installation finished");
-	info("you might have to manually invoke 'modprobe memflow' after installation and make sure the /dev/memflow device is present.");
+	install_message();
 }
 
 fn post_install() {
