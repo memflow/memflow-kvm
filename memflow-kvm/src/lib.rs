@@ -44,7 +44,7 @@ impl<'a> KVMMapData<&'a mut [u8]> {
 pub fn create_connector<'a>(
     args: &ConnectorArgs,
 ) -> Result<MappedPhysicalMemory<&'a mut [u8], KVMMapData<&'a mut [u8]>>> {
-    static ERROR_UNABLE_TO_READ_MEMORY: &str = "Could not access the memflow device at /dev/memflow. Please make sure that you installed the dkms module properly and that it is loaded via `modprobe memflow`. Also ensure that you have read and write access to /dev/memflow. For further information check the Readme at https://github.com/memflow/memflow-kvm";
+    const ERROR_UNABLE_TO_READ_MEMORY: &str = "Could not access the memflow device at /dev/memflow. Please make sure that you installed the dkms module properly and that it is loaded via `modprobe memflow`. Also ensure that you have read and write access to /dev/memflow. For further information check the readme at https://github.com/memflow/memflow-kvm";
 
     let pid = match &args.target {
         Some(pidstr) => Some(
