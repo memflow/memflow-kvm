@@ -19,7 +19,7 @@ jobs:
       - name: Download renamer
         run: curl -sSf https://raw.githubusercontent.com/memflow/memflowup/master/target_rename.sh > target_rename.sh
       - name: Build artifacts
-        run: cargo build --workspace --all-features --verbose
+        run: cargo build --workspace --release --all-features --verbose
       - name: Rename and collect artifacts
         id: artifacts
         run: |
