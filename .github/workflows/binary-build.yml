@@ -51,7 +51,7 @@ jobs:
         run: |
           export I="$(sudo find /var/lib/dkms/${BUILT_MODULE_NAME}/${PACKAGE_VERSION}/tarball/${BUILT_MODULE_NAME}-${PACKAGE_VERSION}*.tar.gz)"
           export F="${BUILT_MODULE_NAME}-source-only.dkms.tar.gz"
-          mv $I $F
+          cp $I $F
           echo "::set-output name=path::$F"
           echo "::set-output name=name::$(basename $F)"
       - name: Upload tarball
