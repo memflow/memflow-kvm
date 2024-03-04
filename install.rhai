@@ -43,8 +43,7 @@ fn install(ctx) {
 
     info("Installing memflow-kvm kernel module");
     let tarball = ctx.github_release_artifact("memflow-source-only.dkms.tar.gz");
-    ctx.write_plugin_artifact(tarball, "memflow-source-only.dkms.tar.gz");
-    ctx.dkms_install("memflow-source-only.dkms.tar.gz");
+    ctx.dkms_install_tarball(tarball);
 
     post_install();
 
