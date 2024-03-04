@@ -14,22 +14,15 @@ jobs:
   cross-build:
     name: Publish binary builds
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        target: ["x86_64-unknown-linux-gnu", "i686-unknown-linux-gnu"]
     steps:
       - uses: actions/checkout@v2
       - name: Download renamer
         run: curl -sSf https://raw.githubusercontent.com/memflow/memflowup/master/target_rename.sh > target_rename.sh
       - name: Build artifacts
-        uses: actions-rs/cargo@v1
-        with:
-          use-cross: true
-          command: build
-          args: --release --all-features --workspace --verbose --target ${{ matrix.target }}
+        run: cargo build --workspace --all-features --verbose
       - name: Rename and collect artifacts
         id: artifacts
-        run: echo "::set-output name=artifact::$(sh ./target_rename.sh "${{ matrix.target }}" | head -n 1)"
+        run: echo "::set-output name=artifact::$(sh ./target_rename.sh "x86_64-unknown-linux-gnu" | head -n 1)"
       - name: Upload build artifacts
         uses: softprops/action-gh-release@v1
         with:
