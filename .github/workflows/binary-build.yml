@@ -12,14 +12,14 @@ env:
 jobs:
 
   cross-build:
-    name: Publish binary builds
+    name: Publish connector binary builds
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Download renamer
         run: curl -sSf https://raw.githubusercontent.com/memflow/memflowup/master/target_rename.sh > target_rename.sh
       - name: Build artifacts
-        run: cargo build --workspace --all-features --verbose
+        run: cargo build --workspace --all-features --verbose --target x86_64-unknown-linux-gnu
       - name: Rename and collect artifacts
         id: artifacts
         run: echo "::set-output name=artifact::$(sh ./target_rename.sh "x86_64-unknown-linux-gnu" | head -n 1)"
@@ -31,6 +31,7 @@ jobs:
             ${{ steps.artifacts.outputs.artifact }}
 
   kmod-build:
+    name: Publish dkms binary builds
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -45,24 +46,14 @@ jobs:
       - run: sudo dkms build -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION
       - run: sudo dkms mktarball -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION --source-only
       - run: sudo dkms mkdeb -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION --source-only
-      - name: Find debian package
-        id: dkms_path
-        run: |
-          export F="$(sudo find /var/lib/dkms/${BUILT_MODULE_NAME}/${PACKAGE_VERSION}/deb/${BUILT_MODULE_NAME}-dkms_${PACKAGE_VERSION}*.deb)"
-          echo "::set-output name=path::$F"
-          echo "::set-output name=name::$(basename $F)"
       - name: Find tarball
         id: tarball_path
         run: |
-          export F="$(sudo find /var/lib/dkms/${BUILT_MODULE_NAME}/${PACKAGE_VERSION}/tarball/${BUILT_MODULE_NAME}-${PACKAGE_VERSION}*.tar.gz)"
+          export I="$(sudo find /var/lib/dkms/${BUILT_MODULE_NAME}/${PACKAGE_VERSION}/tarball/${BUILT_MODULE_NAME}-${PACKAGE_VERSION}*.tar.gz)"
+          export F="${BUILT_MODULE_NAME}-source-only.dkms.tar.gz"
+          mv $I $F
           echo "::set-output name=path::$F"
           echo "::set-output name=name::$(basename $F)"
-      - name: Upload deb artifact
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: bin-${{ github.ref_name }}
-          files: |
-            ${{ steps.dkms_path.outputs.path }}
       - name: Upload tarball
         uses: softprops/action-gh-release@v1
         with:
