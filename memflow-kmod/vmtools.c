@@ -11,7 +11,7 @@
 #include <linux/version.h>
 #include "mmap_lock.h"
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,17,0) && RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(8,8)
 #define kvm_for_each_memslot2(memslot, bkt, slots) (void)bkt; kvm_for_each_memslot(memslot, slots)
 #else
 #define kvm_for_each_memslot2 kvm_for_each_memslot
@@ -203,11 +203,11 @@ struct vm_mem_data {
 #define PAGE_GET_FLAG 0
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5,7,0)
-#define RELEASE_PAGE put_page
-#else
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5,7,0) && RHEL_RELEASE_CODE < RHEL_RELEASE_VERSION(8,8)
 #define PAGE_GET_FLAG 0
 #define RELEASE_PAGE put_user_page
+#else
+#define RELEASE_PAGE put_page
 #endif
 
 static int memflow_vm_mem_release(struct inode *inode, struct file *file)
