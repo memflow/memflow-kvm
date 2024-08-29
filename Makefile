@@ -1,35 +1,49 @@
-obj-y += memflow-kmod/
+# Define the source directory
+SRC_DIR := memflow-kmod
 
-MCFLAGS += -O3
-ccflags-y += ${MCFLAGS}
-CC += ${MCFLAGS}
+# Define the build directory
+BUILD_DIR := build
 
+# Define the object files
+obj-m := $(MODULE_NAME).o
+$(MODULE_NAME)-objs := $(patsubst %.c,%.o,$(wildcard $(SRC_DIR)/*.c))
+
+# Compiler flags
+MCFLAGS := -O3
+ccflags-y += $(MCFLAGS)
+CC += $(MCFLAGS)
+
+# Kernel directory
 ifndef KERNELDIR
-	KDIR := /lib/modules/$(shell uname -r)/build
+KDIR := /lib/modules/$(shell uname -r)/build
 else
-	KDIR := $(KERNELDIR)
+KDIR := $(KERNELDIR)
 endif
 
+# Output directory
 ifndef OUT_DIR
-	KOUTPUT := $(PWD)/build
+KOUTPUT := $(PWD)/$(BUILD_DIR)
 else
-	KOUTPUT := $(OUT_DIR)
+KOUTPUT := $(OUT_DIR)
 endif
 
-KOUTPUT_MAKEFILE := $(KOUTPUT)/Makefile
+# Default target
+all: $(KOUTPUT)/$(MODULE_NAME).ko
 
-all: $(KOUTPUT_MAKEFILE)
-	@echo "$(KOUTPUT)"
+# Build the kernel module
+$(KOUTPUT)/$(MODULE_NAME).ko: $(KOUTPUT)
+	@echo "Building kernel module in $(KOUTPUT)"
+	$(MAKE) -C $(KDIR) M=$(KOUTPUT) src=$(PWD)/$(SRC_DIR) modules
+	@echo "Copying object files to $(KOUTPUT)"
+	cp $(SRC_DIR)/*.o $(KOUTPUT)/
 
-	make -C $(KDIR) M=$(KOUTPUT) src=$(PWD)/memflow-kmod modules
-
+# Create the build directory
 $(KOUTPUT):
-	mkdir -p "$@"
+	mkdir -p $@
 
-$(KOUTPUT_MAKEFILE): $(KOUTPUT)
-	touch "$@"
-
+# Clean target
 clean:
-	make -C $(KDIR) M=$(KOUTPUT) src=$(PWD)/memflow-kmod clean
-	$(shell rm $(KOUTPUT_MAKEFILE))
-	rmdir $(KOUTPUT)
+	$(MAKE) -C $(KDIR) M=$(KOUTPUT) src=$(PWD)/$(SRC_DIR) clean
+	rm -rf $(KOUTPUT)
+
+.PHONY: all clean
