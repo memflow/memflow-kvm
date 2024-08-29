@@ -20,7 +20,7 @@ KOUTPUT_MAKEFILE := $(KOUTPUT)/Makefile
 
 all: $(KOUTPUT_MAKEFILE)
 	@echo "$(KOUTPUT)"
-
+	make -C $(KDIR) M=$(KOUTPUT) src=$(PWD)/memflow-kmod clean
 	make -C $(KDIR) M=$(KOUTPUT) src=$(PWD)/memflow-kmod modules
 	mv $(PWD)/memflow-kmod/memflow.ko ./build/
 
