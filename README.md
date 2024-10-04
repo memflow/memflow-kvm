@@ -58,7 +58,7 @@ KERNEL=="memflow" SUBSYSTEM=="misc" GROUP="memflow" MODE="0660"
 ```
 
 
-## Manually installing
+## Manual installation
 
 #### Connector
 
@@ -72,12 +72,20 @@ Initialize submodules:
 git submodule update --init
 ```
 
-Run `make`. output will be placed in `build/memflow.ko`.
+Run `make`. output will be placed in `memflow-kmod/memflow.ko`.
 
-To then install the built module run
-
+Then to install the module:
 ```
-memflowup build --name memflow-kvm --script install.rhai
+source dkms.conf
+sudo mkdir /usr/src/$BUILT_MODULE_NAME-$PACKAGE_VERSION
+sudo cp -r * /usr/src/$BUILT_MODULE_NAME-$PACKAGE_VERSION
+sudo dkms build -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION
+sudo dkms install -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION
+```
+
+Then you can load the module:
+```
+sudo modprobe memflow
 ```
 
 ## FAQ
