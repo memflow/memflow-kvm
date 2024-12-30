@@ -18,21 +18,18 @@ Recommended way is to use [memflowup](https://github.com/memflow/memflowup).
 
 **Your kernel must be compiled with `CONFIG_KALLSYMS=y`, and `CONFIG_KALLSYMS_ALL=y` being set in kconfig.**
 
-By default [memflowup](https://github.com/memflow/memflowup) will install the latest kernel module automatically.
-
 Stable versions are available under [releases](https://github.com/memflow/memflow-kvm/releases).
 
 Debian/Ubuntu package can be installed with `sudo dpkg -i memflow-dkms_${VERSION}_amd64.deb`, where `VERSION` is the version of the downloaded module.
 
 For other distributions, run this command:
-
 ```
 sudo dkms install --archive=memflow-${VERSION}-source-only.dkms.tar.gz
 ```
 
 It might be necessary to also load the module at runtime:
 ```
-modprobe memflow
+sudo modprobe memflow
 ```
 
 To load the module at startup create a new file in `/etc/modules-load.d/`:
@@ -57,12 +54,11 @@ Then create the udev rule in `/etc/udev/rules.d/`:
 KERNEL=="memflow" SUBSYSTEM=="misc" GROUP="memflow" MODE="0660"
 ```
 
-
 ## Manual installation
 
 #### Connector
 
-Install the connector using `memflowup build --name memflow-kvm`. This will compile the connector in release mode and place it under `~/.local/lib/memflow/` directory, which can then be accessed by memflow clients. Do copy out the underlying shared library to `/usr/local/lib/memflow/` if you want to use it across all users.
+Install the connector using `cargo build --release --all-features`. This will compile the connector in release mode and place it under `target/release/` directory. Do copy out the underlying shared library to `~/.local/lib/memflow/` if you want to use it across other memflow tools.
 
 #### Kernel module
 
@@ -77,10 +73,13 @@ Run `make`. output will be placed in `memflow-kmod/memflow.ko`.
 Then to install the module:
 ```
 source dkms.conf
-sudo mkdir /usr/src/$BUILT_MODULE_NAME-$PACKAGE_VERSION
-sudo cp -r * /usr/src/$BUILT_MODULE_NAME-$PACKAGE_VERSION
-sudo dkms build -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION
-sudo dkms install -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION
+
+mkdir /usr/src/$BUILT_MODULE_NAME-$PACKAGE_VERSION
+cp -r * /usr/src/$BUILT_MODULE_NAME-$PACKAGE_VERSION
+
+dkms build -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION
+
+dkms install -m $BUILT_MODULE_NAME -v $PACKAGE_VERSION
 ```
 
 Then you can load the module:
