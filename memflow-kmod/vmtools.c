@@ -324,8 +324,10 @@ static unsigned long memflow_vm_mem_get_unmapped_area(struct file *file, unsigne
     struct vm_mem_data *data = file->private_data;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(6,10,0)
     return get_unmapped_area(data->wrapped_vma->vm_file, addr, len, pgoff + data->wrapped_vma->vm_pgoff, flags);
-#else
+#elif LINUX_VERSION_CODE < KERNEL_VERSION(6,19,0)
     return mm_get_unmapped_area(data->wrapped_task->mm, data->wrapped_vma->vm_file, addr, len, pgoff + data->wrapped_vma->vm_pgoff, flags);
+#else
+    return mm_get_unmapped_area(data->wrapped_vma->vm_file, addr, len, pgoff + data->wrapped_vma->vm_pgoff, flags);
 #endif
 }
 
