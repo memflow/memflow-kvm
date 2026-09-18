@@ -124,9 +124,32 @@ static int get_sorted_memslots(struct kvm_memslots *slots, int max_slots, vm_mem
 
 	sort(slots_out, slot_count, sizeof(*slots_out), memslot_compare, NULL);
 
-	//TODO: coalesce nearby slots
-
 	return slot_count;
+}
+
+static int coalesce_sorted_memslots(vm_memslot_t *slots, int slot_count)
+{
+	int write_idx = 0;
+	int read_idx;
+
+	if (slot_count <= 1)
+		return slot_count;
+
+	for (read_idx = 1; read_idx < slot_count; read_idx++) {
+		vm_memslot_t *cur = &slots[write_idx];
+		vm_memslot_t *next = &slots[read_idx];
+
+		if (cur->base + cur->map_size == next->base && cur->host_base + cur->map_size == next->host_base) {
+			cur->map_size += next->map_size;
+
+			continue;
+		}
+
+		if (++write_idx != read_idx)
+			slots[write_idx] = *next;
+	}
+
+	return ++write_idx;
 }
 
 static int get_vm_info(struct kvm *kvm, vm_info_t __user *user_info)
@@ -169,6 +192,8 @@ static int get_vm_info(struct kvm *kvm, vm_info_t __user *user_info)
 
 	if ((slot_count = get_sorted_memslots(kvm_memslots(kvm), kernel_info.slot_count, memslot_map)) == -1)
 		goto free_slots;
+
+	slot_count = coalesce_sorted_memslots(memslot_map, slot_count);
 
 	kernel_info.userspace_pid = kvm->userspace_pid;
 	kernel_info.slot_count = slot_count;
@@ -483,7 +508,7 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 
 	if (copy_from_user(&user_info_copied, user_info, sizeof(vm_map_info_t)))
 		goto free_alloc;
-	
+
 	priv->vm_map_info = user_info_copied;
 	priv->vm_map_info.slots = priv->map_slots;
 
@@ -510,7 +535,7 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 	priv->vm_map_info.slot_count = memslot_count;
 
 	mmap_write_lock(other_mm);
-	
+
     // Once we hold mmap_sem, the slots won't be freed so there is no purpose to hold the locks
     mutex_unlock(&kvm->lock);
 	mutex_unlock(&kvm->slots_lock);
@@ -525,6 +550,8 @@ static int do_map_vm(struct kvm *kvm, vm_map_info_t __user *user_info)
 
 	// Now remap all unique mappings
 	remap_vmas(priv, other_task);
+
+	priv->vm_map_info.slot_count = coalesce_sorted_memslots(priv->vm_map_info.slots, priv->vm_map_info.slot_count);
 
 	if (!priv->mapped_vma_count)
 		goto release_file;
@@ -574,4 +601,3 @@ static int memflow_vm_mapped_release(struct inode *inode, struct file *filp)
 	vfree(filp->private_data);
 	return 0;
 }
-
