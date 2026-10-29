@@ -439,6 +439,16 @@ static void find_unique_vmas(struct vm_mapped_data *data, struct mm_struct *othe
 	for (i = 0; i < data->vm_map_info.slot_count; i++) {
 		slot = data->vm_map_info.slots + i;
 		vma = find_vma(other_mm, slot->host_base);
+		/*
+		 * find_vma() returns NULL when host_base has no VMA at or
+		 * above it, e.g. the QEMU process tearing its mm down mid-map.
+		 * The unchecked vma->vm_start deref below oopses the module
+		 * while mmap_write_lock(other_mm) is held. The lock then never
+		 * releases and QEMU wedges. Skip the slot instead. remap_vmas()
+		 * already handles a missing VMA this way.
+		 */
+		if (!vma)
+			goto skip_slot;
 
 		for (o = 0; o < data->mapped_vma_count; o++) {
 			if (vma->vm_start == data->vma_maps[o].start)
